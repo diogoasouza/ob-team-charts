@@ -1,2 +1,5 @@
-url: https://github.com/rancher/PushProx/releases/download/v0.1.5-rancher2/rancher-pushprox-0.1.5-rancher2.tgz
+url: https://github.com/diogoasouza/PushProx.git
+subdirectory: chart
+commit: c2d9fd5d049c8f2cd1ad69950b21a5738c7021cd
+version: 106.0.1
 doNotRelease: true

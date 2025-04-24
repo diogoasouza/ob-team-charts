@@ -129,8 +129,8 @@ clients:
   affinity: {}
 
   image:
-    repository: rancher/pushprox-client
-    tag: v0.1.4-rancher2-client
+    repository: diogoasouza/pushprox
+    tag: latest
   command: ["pushprox-client"]
 
   copyCertsImage:
@@ -161,6 +161,6 @@ proxy:
   tolerations: []
 
   image:
-    repository: rancher/pushprox-proxy
-    tag: v0.1.4-rancher2-proxy
+    repository: diogoasouza/pushprox
+    tag: latest
   command: ["pushprox-proxy"]
