@@ -130,7 +130,7 @@ clients:
 
   image:
     repository: diogoasouza/pushprox
-    tag: latest
+    tag: 0.16.0
   command: ["pushprox-client"]
 
   copyCertsImage:
@@ -162,5 +162,5 @@ proxy:
 
   image:
     repository: diogoasouza/pushprox
-    tag: latest
+    tag: 0.16.0
   command: ["pushprox-proxy"]

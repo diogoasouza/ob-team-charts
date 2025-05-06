@@ -31,15 +31,15 @@ dependencies:
 - condition: hardenedKubelet.enabled
   name: hardenedKubelet
   repository: file://./charts/hardenedKubelet
-  version: 9.9.9
+  version: 0.16.0
 - condition: hardenedNodeExporter.enabled
   name: hardenedNodeExporter
   repository: file://./charts/hardenedNodeExporter
-  version: 9.9.9
+  version: 0.16.0
 - condition: k3sServer.enabled
   name: k3sServer
   repository: file://./charts/k3sServer
-  version: 9.9.9
+  version: 0.16.0
 - condition: kubeStateMetrics.enabled
   name: kube-state-metrics
   repository: file://./charts/kube-state-metrics
@@ -47,19 +47,19 @@ dependencies:
 - condition: kubeAdmControllerManager.enabled
   name: kubeAdmControllerManager
   repository: file://./charts/kubeAdmControllerManager
-  version: 9.9.9
+  version: 0.16.0
 - condition: kubeAdmEtcd.enabled
   name: kubeAdmEtcd
   repository: file://./charts/kubeAdmEtcd
-  version: 9.9.9
+  version: 0.16.0
 - condition: kubeAdmProxy.enabled
   name: kubeAdmProxy
   repository: file://./charts/kubeAdmProxy
-  version: 9.9.9
+  version: 0.16.0
 - condition: kubeAdmScheduler.enabled
   name: kubeAdmScheduler
   repository: file://./charts/kubeAdmScheduler
-  version: 9.9.9
+  version: 0.16.0
 - condition: prometheus-adapter.enabled
   name: prometheus-adapter
   repository: file://./charts/prometheus-adapter
@@ -71,43 +71,43 @@ dependencies:
 - condition: rke2ControllerManager.enabled
   name: rke2ControllerManager
   repository: file://./charts/rke2ControllerManager
-  version: 9.9.9
+  version: 0.16.0
 - condition: rke2Etcd.enabled
   name: rke2Etcd
   repository: file://./charts/rke2Etcd
-  version: 9.9.9
+  version: 0.16.0
 - condition: rke2IngressNginx.enabled
   name: rke2IngressNginx
   repository: file://./charts/rke2IngressNginx
-  version: 9.9.9
+  version: 0.16.0
 - condition: rke2Proxy.enabled
   name: rke2Proxy
   repository: file://./charts/rke2Proxy
-  version: 9.9.9
+  version: 0.16.0
 - condition: rke2Scheduler.enabled
   name: rke2Scheduler
   repository: file://./charts/rke2Scheduler
-  version: 9.9.9
+  version: 0.16.0
 - condition: rkeControllerManager.enabled
   name: rkeControllerManager
   repository: file://./charts/rkeControllerManager
-  version: 9.9.9
+  version: 0.16.0
 - condition: rkeEtcd.enabled
   name: rkeEtcd
   repository: file://./charts/rkeEtcd
-  version: 9.9.9
+  version: 0.16.0
 - condition: rkeIngressNginx.enabled
   name: rkeIngressNginx
   repository: file://./charts/rkeIngressNginx
-  version: 9.9.9
+  version: 0.16.0
 - condition: rkeProxy.enabled
   name: rkeProxy
   repository: file://./charts/rkeProxy
-  version: 9.9.9
+  version: 0.16.0
 - condition: rkeScheduler.enabled
   name: rkeScheduler
   repository: file://./charts/rkeScheduler
-  version: 9.9.9
+  version: 0.16.0
 - condition: windowsExporter.enabled
   name: windowsExporter
   repository: file://./charts/windowsExporter
