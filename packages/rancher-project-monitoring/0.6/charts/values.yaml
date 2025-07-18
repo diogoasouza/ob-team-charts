@@ -1150,7 +1150,7 @@ prometheus:
     ##
     image:
       repository: rancher/prom-prometheus
-      tag: v2.55.1
+      tag: v3.2.1
       sha: ""
 
     ## Tolerations for use with node taints
