@@ -919,7 +919,7 @@
  
        # Support for new table panels, when enabled grafana auto migrates the old table panels to newer table panels
        enableNewTablePanelSyntax: false
-@@ -1400,10 +2145,66 @@
+@@ -1400,10 +2145,71 @@
    ## Passed to grafana subchart and used by servicemonitor below
    ##
    service:
@@ -969,6 +969,11 @@
 +      securityContext:
 +        runAsUser: 101
 +        runAsGroup: 101
++        allowPrivilegeEscalation: false
++        readOnlyRootFilesystem: true
++        capabilities:
++          drop:
++            - ALL
 +
 +  ## Volumes that can be used in containers
 +  extraContainerVolumes:
@@ -987,7 +992,7 @@
    serviceMonitor:
      # If true, a ServiceMonitor CRD is created for a prometheus operator
      # https://github.com/coreos/prometheus-operator
-@@ -1437,6 +2238,17 @@
+@@ -1437,6 +2243,17 @@
      #   replacement: $1
      #   action: replace
  
@@ -1005,7 +1010,7 @@
  ## Flag to disable all the kubernetes component scrapers
  ##
  kubernetesServiceMonitors:
-@@ -1491,7 +2303,7 @@
+@@ -1491,7 +2308,7 @@
      metricRelabelings:
        # Drop excessively noisy apiserver buckets.
        - action: drop
@@ -1014,7 +1019,7 @@
          sourceLabels:
            - __name__
            - le
-@@ -1765,7 +2577,7 @@
+@@ -1765,7 +2582,7 @@
  ## Component scraping the kube controller manager
  ##
  kubeControllerManager:
@@ -1023,7 +1028,7 @@
  
    ## If your kube controller manager is not deployed as a pod, specify IPs it can be found on
    ##
-@@ -1877,7 +2689,6 @@
+@@ -1877,7 +2694,6 @@
      enabled: true
      port: 9153
      targetPort: 9153
@@ -1031,7 +1036,7 @@
      ipDualStack:
        enabled: false
        ipFamilies: ["IPv6", "IPv4"]
-@@ -2052,7 +2863,7 @@
+@@ -2052,7 +2868,7 @@
  ## Component scraping etcd
  ##
  kubeEtcd:
@@ -1040,7 +1045,7 @@
  
    ## If your etcd is not deployed as a pod, specify IPs it can be found on
    ##
-@@ -2161,7 +2972,7 @@
+@@ -2161,7 +2977,7 @@
  ## Component scraping kube scheduler
  ##
  kubeScheduler:
@@ -1049,7 +1054,7 @@
  
    ## If your kube scheduler is not deployed as a pod, specify IPs it can be found on
    ##
-@@ -2267,7 +3078,7 @@
+@@ -2267,7 +3083,7 @@
  ## Component scraping kube proxy
  ##
  kubeProxy:
@@ -1058,7 +1063,7 @@
  
    ## If your kube proxy is not deployed as a pod, specify IPs it can be found on
    ##
-@@ -2731,10 +3542,9 @@
+@@ -2731,10 +3547,9 @@
        ## Prometheus-operator webhook image
        ##
        image:
@@ -1071,7 +1076,7 @@
          sha: ""
          pullPolicy: IfNotPresent
  
-@@ -2843,9 +3653,8 @@
+@@ -2843,9 +3658,8 @@
      patch:
        enabled: true
        image:
@@ -1083,7 +1088,7 @@
          sha: ""
          pullPolicy: IfNotPresent
        resources: {}
-@@ -3225,10 +4034,8 @@
+@@ -3225,10 +4039,8 @@
    ## Prometheus-operator image
    ##
    image:
@@ -1096,7 +1101,7 @@
      sha: ""
      pullPolicy: IfNotPresent
  
-@@ -3252,10 +4059,8 @@
+@@ -3252,10 +4064,8 @@
    ##
    prometheusConfigReloader:
      image:
@@ -1109,7 +1114,7 @@
        sha: ""
  
      # add prometheus config reloader liveness and readiness probe. Default: false
-@@ -3273,10 +4078,8 @@
+@@ -3273,10 +4083,8 @@
    ## Thanos side-car image when configured
    ##
    thanosImage:
@@ -1121,7 +1126,7 @@
  
    ## Set a Label Selector to filter watched prometheus and prometheusAgent
    ##
-@@ -3309,6 +4112,8 @@
+@@ -3309,6 +4117,8 @@
  ##
  prometheus:
    enabled: true
@@ -1130,7 +1135,7 @@
  
    ## Toggle prometheus into agent mode
    ## Note many of features described below (e.g. rules, query, alerting, remote read, thanos) will not work in agent mode.
-@@ -3469,7 +4274,7 @@
+@@ -3469,7 +4279,7 @@
      port: 9090
  
      ## To be used with a proxy extraContainer port
@@ -1139,7 +1144,7 @@
  
      ## Port for Prometheus Reloader to listen on
      ##
-@@ -3859,11 +4664,11 @@
+@@ -3859,11 +4669,11 @@
      ## Defaults to 30s.
      ## ref: https://github.com/prometheus-operator/prometheus-operator/blob/release-0.44/pkg/prometheus/promcfg.go#L180-L183
      ##
@@ -1153,7 +1158,7 @@
  
      ## List of scrape classes to expose to scraping objects such as
      ## PodMonitors, ServiceMonitors, Probes and ScrapeConfigs.
-@@ -3877,7 +4682,7 @@
+@@ -3877,7 +4687,7 @@
  
      ## Interval between consecutive evaluations.
      ##
@@ -1162,7 +1167,7 @@
  
      ## ListenLocal makes the Prometheus server listen on loopback, so that it does not bind against the Pod IP.
      ##
-@@ -3913,10 +4718,8 @@
+@@ -3913,10 +4723,8 @@
      ## Image of Prometheus.
      ##
      image:
@@ -1174,7 +1179,7 @@
  
      ## Tolerations for use with node taints
      ## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
-@@ -4014,7 +4817,7 @@
+@@ -4014,7 +4822,7 @@
      ## prometheus resource to be created with selectors based on values in the helm deployment,
      ## which will also match the PrometheusRule resources created
      ##
@@ -1183,7 +1188,7 @@
  
      ## PrometheusRules to be selected for target discovery.
      ## If {}, select all PrometheusRules
-@@ -4039,7 +4842,7 @@
+@@ -4039,7 +4847,7 @@
      ## prometheus resource to be created with selectors based on values in the helm deployment,
      ## which will also match the servicemonitors created
      ##
@@ -1192,7 +1197,7 @@
  
      ## ServiceMonitors to be selected for target discovery.
      ## If {}, select all ServiceMonitors
-@@ -4062,7 +4865,7 @@
+@@ -4062,7 +4870,7 @@
      ## prometheus resource to be created with selectors based on values in the helm deployment,
      ## which will also match the podmonitors created
      ##
@@ -1201,7 +1206,7 @@
  
      ## PodMonitors to be selected for target discovery.
      ## If {}, select all PodMonitors
-@@ -4228,9 +5031,13 @@
+@@ -4228,9 +5036,13 @@
  
      ## Resource limits & requests
      ##
@@ -1218,7 +1223,7 @@
  
      ## Prometheus StorageSpec for persistent data
      ## ref: https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/platform/storage.md
-@@ -4253,7 +5060,13 @@
+@@ -4253,7 +5065,13 @@
      #    medium: Memory
  
      # Additional volumes on the output StatefulSet definition.
@@ -1233,7 +1238,7 @@
  
      # Additional VolumeMounts on the output StatefulSet definition.
      volumeMounts: []
-@@ -4417,25 +5230,34 @@
+@@ -4417,25 +5235,39 @@
        #     #   access_key: ""
        #     #   secret_key: ""
  
@@ -1282,10 +1287,15 @@
 +        securityContext:
 +          runAsUser: 101
 +          runAsGroup: 101
++          allowPrivilegeEscalation: false
++          readOnlyRootFilesystem: true
++          capabilities:
++            drop:
++              - ALL
  
      ## InitContainers allows injecting additional initContainers. This is meant to allow doing some changes
      ## (permissions, dir tree) on mounted volumes before starting prometheus
-@@ -4988,10 +5810,8 @@
+@@ -4988,10 +5820,8 @@
      ## Image of ThanosRuler
      ##
      image:
@@ -1297,7 +1307,7 @@
  
      ## Namespaces to be selected for PrometheusRules discovery.
      ## If nil, select own namespace. Namespaces to be selected for ServiceMonitor discovery.
-@@ -5087,10 +5907,6 @@
+@@ -5087,10 +5917,6 @@
      ##
      externalPrefix:
  
@@ -1308,7 +1318,7 @@
      ## The route prefix ThanosRuler registers HTTP handlers for. This is useful, if using ExternalURL and a proxy is rewriting HTTP routes of a request, and the actual ExternalURL is still true,
      ## but the server serves requests under a different route prefix. For example for use with kubectl proxy.
      ##
-@@ -5292,3 +6108,9 @@
+@@ -5292,3 +6118,9 @@
    #     name: prometheus-extra
    #   data:
    #     extra-data: "value"
