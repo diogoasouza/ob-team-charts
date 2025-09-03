@@ -27,7 +27,35 @@
    # specify service account manually
    # serviceAccountName: custom
  
-@@ -102,6 +99,10 @@
+@@ -70,17 +67,18 @@
+ ## SecurityContext holds pod-level security attributes and common container settings.
+ ## This defaults to non root user with uid 1000 and gid 2000.	*v1.PodSecurityContext	false
+ ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+-podSecurityContext: {}
+-#  runAsNonRoot: true
+-#  runAsUser: 1000
+-#  fsGroup: 2000
++podSecurityContext:
++  runAsNonRoot: true
++  runAsUser: 1000
++  fsGroup: 2000
+ 
+ # -- Container SecurityContext for Logging operator. [More info](https://kubernetes.io/docs/concepts/policy/security-context/)
+-securityContext: {}
+-#  allowPrivilegeEscalation: false
+-#  readOnlyRootFilesystem: true
+-  # capabilities:
+-  #   drop: ["ALL"]
++securityContext:
++  allowPrivilegeEscalation: false
++  readOnlyRootFilesystem: true
++  capabilities:
++     drop:
++       - ALL
+ 
+ # -- Operator priorityClassName.
+ priorityClassName: {}
+@@ -102,6 +100,10 @@
    #   cpu: 100m
    #   memory: 128Mi
  
@@ -38,7 +66,7 @@
  nodeSelector: {}
  
  # -- Node Tolerations
-@@ -119,7 +120,7 @@
+@@ -119,7 +121,7 @@
    # -- Logging resources are disabled by default
    enabled: false
  
@@ -47,7 +75,7 @@
    loggingRef: ""
  
    # -- Disable configuration check before applying new fluentd configuration.
-@@ -247,7 +248,7 @@
+@@ -247,7 +249,7 @@
        imagePullSecrets: []
      pvc:
        # -- enable pvc for
@@ -56,7 +84,7 @@
        # -- storage class for event tailer pvc
        accessModes:
          - ReadWriteOnce
-@@ -309,14 +310,164 @@
+@@ -309,14 +311,164 @@
    image: fluent/fluent-bit
    pullPolicy: IfNotPresent
    port: 8080
@@ -229,7 +257,7 @@
  
  # -- Extra manifests to deploy as an array
  extraManifests: []
-@@ -327,3 +478,12 @@
+@@ -327,3 +479,12 @@
    #     name: extra-manifest
    #   data:
    #     extra-data: "value"

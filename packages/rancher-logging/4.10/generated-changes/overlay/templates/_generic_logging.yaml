@@ -25,6 +25,17 @@ spec:
     scaling:
       replicas: {{ .Values.fluentd.replicas }}
     {{- end }}
+    security:
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: false
+        capabilities:
+          drop:
+            - ALL
+      podSecurityContext:
+        fsGroup: 101
+        runAsUser: 100
+        runAsGroup: 101
     {{- with .Values.fluentd.env }}
     envVars: {{- toYaml . | nindent 6 }}
     {{- end }}
