@@ -17,9 +17,14 @@ spec:
   bufferStorageVolume: {{- toYaml . | nindent 6 }}
   {{- end }}
   {{- end }}
-  {{- if .Values.global.seLinux.enabled }}
   security:
     securityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop:
+          - ALL
+  {{- if .Values.global.seLinux.enabled }}
       seLinuxOptions:
         type: rke_logreader_t
   {{- end }}

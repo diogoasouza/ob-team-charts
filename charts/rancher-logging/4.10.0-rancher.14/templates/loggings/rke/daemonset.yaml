@@ -31,8 +31,13 @@ spec:
             - mountPath: /fluent-bit/etc/fluent-bit.conf
               name: config
               subPath: fluent-bit.conf
-          {{- if .Values.global.seLinux.enabled }}
           securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          {{- if .Values.global.seLinux.enabled }}
             seLinuxOptions:
               type: rke_logreader_t
           {{- end }}

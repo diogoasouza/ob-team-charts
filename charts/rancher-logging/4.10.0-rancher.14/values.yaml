@@ -67,17 +67,18 @@ monitoring:
 ## SecurityContext holds pod-level security attributes and common container settings.
 ## This defaults to non root user with uid 1000 and gid 2000.	*v1.PodSecurityContext	false
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-podSecurityContext: {}
-#  runAsNonRoot: true
-#  runAsUser: 1000
-#  fsGroup: 2000
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 2000
 
 # -- Container SecurityContext for Logging operator. [More info](https://kubernetes.io/docs/concepts/policy/security-context/)
-securityContext: {}
-#  allowPrivilegeEscalation: false
-#  readOnlyRootFilesystem: true
-  # capabilities:
-  #   drop: ["ALL"]
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+     drop:
+       - ALL
 
 # -- Operator priorityClassName.
 priorityClassName: {}
