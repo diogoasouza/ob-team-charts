@@ -1,7 +1,7 @@
 --- charts-original/templates/prometheus/rules-1.14/k8s.rules.container_cpu_usage_seconds_total.yaml
 +++ charts/templates/prometheus/rules-1.14/k8s.rules.container_cpu_usage_seconds_total.yaml
-@@ -26,7 +26,7 @@
-     rules:
+@@ -42,7 +42,7 @@
+       {{- end }}
      - expr: |-
          sum by ({{ range $.Values.defaultRules.additionalAggregationLabels }}{{ . }},{{ end }}cluster, namespace, pod, container) (
 -          irate(container_cpu_usage_seconds_total{job="kubelet", metrics_path="/metrics/cadvisor", image!=""}[5m])

@@ -10,7 +10,7 @@
  apiVersion: monitoring.coreos.com/v1
  kind: PrometheusRule
  metadata:
-@@ -60,4 +61,5 @@
+@@ -78,4 +79,5 @@
          {{- end }}
        {{- end }}
        record: node_quantile:kubelet_pleg_relist_duration_seconds:histogram_quantile

@@ -1,7 +1,7 @@
 --- charts-original/README.md
 +++ charts/README.md
-@@ -96,7 +96,47 @@
- helm show values prometheus-community/kube-prometheus-stack
+@@ -106,7 +106,47 @@
+ helm show values oci://ghcr.io/prometheus-community/charts/kube-prometheus-stack
  ```
  
 -You may also `helm show values` on this chart's [dependencies](#dependencies) for additional options.

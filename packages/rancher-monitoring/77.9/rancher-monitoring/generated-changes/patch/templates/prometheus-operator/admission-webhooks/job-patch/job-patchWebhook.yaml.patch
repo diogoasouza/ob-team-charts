@@ -12,7 +12,7 @@
    template:
      metadata:
        name:  {{ template "kube-prometheus-stack.fullname" . }}-admission-patch
-@@ -31,7 +34,7 @@
+@@ -35,7 +38,7 @@
        {{- end }}
        containers:
          - name: patch
@@ -21,7 +21,7 @@
            {{- if .Values.prometheusOperator.admissionWebhooks.patch.image.sha }}
            image: {{ $registry }}/{{ .Values.prometheusOperator.admissionWebhooks.patch.image.repository }}:{{ .Values.prometheusOperator.admissionWebhooks.patch.image.tag }}@sha256:{{ .Values.prometheusOperator.admissionWebhooks.patch.image.sha }}
            {{- else }}
-@@ -52,16 +55,16 @@
+@@ -56,16 +59,16 @@
  {{ toYaml .Values.prometheusOperator.admissionWebhooks.patch.resources | indent 12 }}
        restartPolicy: OnFailure
        serviceAccountName: {{ template "kube-prometheus-stack.fullname" . }}-admission

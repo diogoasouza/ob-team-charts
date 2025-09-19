@@ -28,12 +28,12 @@ def change_style(style, representer):
 
 
 refs = {
-    # https://github.com/prometheus-operator/kube-prometheus
-    'ref.kube-prometheus': 'baf3c7a71ec9f889644231f677f8708791d38293',
-    # https://github.com/kubernetes-monitoring/kubernetes-mixin
-    'ref.kubernetes-mixin': '1fa3b6731c93eac6d5b8c3c3b087afab2baabb42',
-    # https://github.com/etcd-io/etcd
-    'ref.etcd': '9f1709e015640838269bfbecae9ee2be41b47939',
+    # renovate: git-refs=https://github.com/prometheus-operator/kube-prometheus branch=main
+    'ref.kube-prometheus': '760b786b29edb4aa917e87746cb9e2cab9cf3066',
+    # renovate: git-refs=https://github.com/kubernetes-monitoring/kubernetes-mixin branch=master
+    'ref.kubernetes-mixin': '5dae7f6adf083639934a4a54aef451174dd84370',
+    # renovate: git-refs=https://github.com/etcd-io/etcd branch=main
+    'ref.etcd': 'ad9d69071936b5771830add74a799f2e822e2ffc',
 }
 
 # Source files list
@@ -132,13 +132,44 @@ metadata:
 {{ toYaml .Values.grafana.sidecar.dashboards.annotations | indent 4 }}
   labels:
     {{- if $.Values.grafana.sidecar.dashboards.label }}
-    {{ $.Values.grafana.sidecar.dashboards.label }}: {{ ternary $.Values.grafana.sidecar.dashboards.labelValue "1" (not (empty $.Values.grafana.sidecar.dashboards.labelValue)) | quote }}
+    {{ tpl $.Values.grafana.sidecar.dashboards.label $ }}: {{ ((tpl $.Values.grafana.sidecar.dashboards.labelValue $) | default 1) | quote }}
     {{- end }}
     app: {{ template "kube-prometheus-stack.name" $ }}-grafana
 {{ include "kube-prometheus-stack.labels" $ | indent 4 }}
 data:
 '''
 
+    # Add GrafanaDashboard custom resource
+grafana_dashboard_operator = """
+---
+{{- if and .Values.grafana.operator.dashboardsConfigMapRefEnabled (or .Values.grafana.enabled .Values.grafana.forceDeployDashboards) (semverCompare ">=%(min_kubernetes)s" $kubeTargetVersion) (semverCompare "<%(max_kubernetes)s" $kubeTargetVersion) .Values.grafana.defaultDashboardsEnabled%(condition)s }}
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: {{ printf "%%s-%%s" (include "kube-prometheus-stack.fullname" $) "%(name)s" | trunc 63 | trimSuffix "-" }}
+  namespace: {{ template "kube-prometheus-stack-grafana.namespace" . }}
+  {{ with .Values.grafana.operator.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{ end }}
+  labels:
+    app: {{ template "kube-prometheus-stack.name" $ }}-grafana
+spec:
+  allowCrossNamespaceImport: true
+  resyncPeriod: {{ .Values.grafana.operator.resyncPeriod | quote | default "10m" }}
+  folder: {{ .Values.grafana.operator.folder | quote }}
+  instanceSelector:
+    matchLabels:
+    {{- if .Values.grafana.operator.matchLabels }}
+      {{- toYaml .Values.grafana.operator.matchLabels | nindent 6 }}
+    {{- else }}
+      {{- fail "grafana.operator.matchLabels must be specified when grafana.operator.dashboardsConfigMapRefEnabled is true" }}
+    {{- end }}
+  configMapRef:
+    name: {{ printf "%%s-%%s" (include "kube-prometheus-stack.fullname" $) "%(name)s" | trunc 63 | trimSuffix "-" }}
+    key: %(name)s.json
+{{- end }}
+"""
 
 def init_yaml_styles():
     represent_literal_str = change_style('|', SafeRepresenter.represent_str)
@@ -250,6 +281,15 @@ def write_group_to_file(resource_name, content, url, destination, min_kubernetes
 
     # footer
     lines += '{{- end }}'
+
+    lines_grafana_operator = grafana_dashboard_operator % {
+        'name': resource_name,
+        'condition': condition_map.get(resource_name, ''),
+        'min_kubernetes': min_kubernetes,
+        'max_kubernetes': max_kubernetes
+    }
+
+    lines += lines_grafana_operator
 
     filename = resource_name + '.yaml'
     new_filename = "%s/%s" % (destination, filename)
