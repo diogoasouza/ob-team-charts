@@ -1,17 +1,14 @@
 --- charts-original/templates/servicemonitor.yaml
 +++ charts/templates/servicemonitor.yaml
-@@ -57,9 +57,19 @@
-       {{- with .Values.prometheus.monitor.relabelings }}
+@@ -58,8 +58,18 @@
        relabelings:
          {{- toYaml . | nindent 8 }}
--      {{- end }}
+       {{- end }}
 -      {{- with .Values.prometheus.monitor.metricRelabelings }}
-+      {{- end }}
        metricRelabelings:
--        {{- toYaml . | nindent 8 }}
 +      {{- with .Values.prometheus.monitor.metricRelabelings }}
-+        {{- toYaml . | nindent 8 }}
-+      {{- end }}
+         {{- toYaml . | nindent 8 }}
+       {{- end }}
 +      {{ if .Values.global.cattle.clusterId }}
 +        - sourceLabels: [__address__]
 +          targetLabel: cluster_id
@@ -21,5 +18,5 @@
 +        - sourceLabels: [__address__]
 +          targetLabel: cluster_name
 +          replacement: {{ .Values.global.cattle.clusterName }}
-       {{- end }}
++      {{- end }}
  {{- end }}

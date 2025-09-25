@@ -1,10 +1,8 @@
 --- charts-original/values.yaml
 +++ charts/values.yaml
-@@ -1,11 +1,12 @@
- # Default values for prometheus-node-exporter.
+@@ -2,10 +2,10 @@
  # This is a YAML-formatted file.
  # Declare variables to be passed into your templates.
-+
  image:
 -  registry: quay.io
 -  repository: prometheus/node-exporter
@@ -12,23 +10,20 @@
 +  repository: rancher/mirrored-prometheus-node-exporter
    # Overrides the image tag whose default is {{ printf "v%s" .Chart.AppVersion }}
 -  tag: ""
-+  tag: v1.9.0
++  tag: v1.9.1
    pullPolicy: IfNotPresent
    digest: ""
  
-@@ -19,6 +20,11 @@
+@@ -19,6 +19,8 @@
  revisionHistoryLimit: 10
  
  global:
 +  cattle:
-+    psp:
-+      enable: true
 +    systemDefaultRegistry: ""
-+
    # To help compatibility with other charts which use global.imagePullSecrets.
    # Allow either an array of {name: pullSecret} maps (k8s-style), or an array of strings (more common helm-style).
    # global:
-@@ -43,8 +49,8 @@
+@@ -43,8 +45,8 @@
    env: {}
      # VARIABLE: value
    image:
@@ -36,10 +31,10 @@
 -    repository: brancz/kube-rbac-proxy
 +    registry: ''
 +    repository: rancher/mirrored-brancz-kube-rbac-proxy
-     tag: v0.18.2
+     tag: v0.19.1
      sha: ""
      pullPolicy: IfNotPresent
-@@ -126,13 +132,13 @@
+@@ -126,13 +128,13 @@
    clusterIP: ""
    ## Default service port. Sets the port of the exposed container as well (NE or kubeRBACProxy).
    ## Use "servicePort" below if changing the service port only is desired.
@@ -55,17 +50,7 @@
    ## Name of the service port. Sets the port name of the main container (NE) as well.
    portName: metrics
    ## Port number for service type NodePort
-@@ -369,9 +375,6 @@
-   ## If true, create & use RBAC resources
-   ##
-   create: true
--  ## If true, create & use Pod Security Policy resources
--  ## https://kubernetes.io/docs/concepts/policy/pod-security-policy/
--  pspEnabled: true
-   pspAnnotations: {}
- 
- # for deployments that have node_exporter deployed outside of the cluster, list
-@@ -461,6 +464,8 @@
+@@ -459,6 +461,8 @@
  tolerations:
    - effect: NoSchedule
      operator: Exists
