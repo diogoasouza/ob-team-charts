@@ -10,23 +10,20 @@
 -  tag: ""
 +  registry: docker.io
 +  repository: rancher/mirrored-kube-state-metrics-kube-state-metrics
-+  tag: v2.15.0
++  tag: v2.17.0
    sha: ""
    pullPolicy: IfNotPresent
  
-@@ -12,6 +11,11 @@
+@@ -12,6 +11,8 @@
  # - name: "image-pull-secret"
  
  global:
 +  cattle:
-+    psp:
-+      enabled: false
 +    systemDefaultRegistry: ""
-+
    # To help compatibility with other charts which use global.imagePullSecrets.
    # Allow either an array of {name: pullSecret} maps (k8s-style), or an array of strings (more common helm-style).
    # global:
-@@ -104,8 +108,8 @@
+@@ -104,8 +105,8 @@
  kubeRBACProxy:
    enabled: false
    image:
@@ -34,14 +31,6 @@
 -    repository: brancz/kube-rbac-proxy
 +    registry: ''
 +    repository: rancher/mirrored-brancz-kube-rbac-proxy
-     tag: v0.18.2
+     tag: v0.19.1
      sha: ""
      pullPolicy: IfNotPresent
-@@ -244,7 +248,6 @@
- ## Ref: https://kubernetes.io/docs/concepts/policy/pod-security-policy/
- ##
- podSecurityPolicy:
--  enabled: false
-   annotations: {}
-     ## Specify pod annotations
-     ## Ref: https://kubernetes.io/docs/concepts/policy/pod-security-policy/#apparmor

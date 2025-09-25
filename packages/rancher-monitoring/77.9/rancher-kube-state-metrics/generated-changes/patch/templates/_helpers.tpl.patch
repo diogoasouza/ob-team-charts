@@ -33,7 +33,7 @@
  {{/* vim: set filetype=mustache: */}}
  {{/*
  Expand the name of the chart.
-@@ -121,14 +150,19 @@
+@@ -140,14 +169,19 @@
  The image to use for kube-state-metrics
  */}}
  {{- define "kube-state-metrics.image" -}}
