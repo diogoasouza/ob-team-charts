@@ -94,8 +94,14 @@ Allow the release namespace to be overridden for multi-namespace deployments in 
 Common labels
 */}}
 {{- define "grafana.labels" -}}
+app.kubernetes.io/component: {{ include "grafana.name" . }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
 helm.sh/chart: {{ include "grafana.chart" . }}
+chart: {{ include "grafana.chart" . }}
+release: {{ $.Release.Name | quote }}
+heritage: {{ $.Release.Service | quote }}
 {{ include "grafana.selectorLabels" . }}
+app.kubernetes.io/part-of: {{ template "kube-prometheus-stack.name" . }}
 {{- if or .Chart.AppVersion .Values.image.tag }}
 app.kubernetes.io/version: {{ mustRegexReplaceAllLiteral "@sha.*" .Values.image.tag "" | default .Chart.AppVersion | trunc 63 | trimSuffix "-" | quote }}
 {{- end }}
