@@ -1,24 +1,10 @@
 --- charts-original/Chart.yaml
 +++ charts/Chart.yaml
-@@ -8,13 +8,24 @@
+@@ -8,13 +8,10 @@
      - name: Upgrade Process
        url: https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/README.md#upgrading-chart
    artifacthub.io/operator: "true"
 +  catalog.cattle.io/auto-install: rancher-monitoring-crd=match
-+  catalog.cattle.io/certified: rancher
-+  catalog.cattle.io/deploys-on-os: windows
-+  catalog.cattle.io/display-name: Monitoring
-+  catalog.cattle.io/kube-version: '>= 1.26.0-0'
-+  catalog.cattle.io/namespace: cattle-monitoring-system
-+  catalog.cattle.io/permits-os: linux,windows
-+  catalog.cattle.io/provides-gvr: monitoring.coreos.com.prometheus/v1
-+  catalog.cattle.io/rancher-version: '>= 2.9.0-0'
-+  catalog.cattle.io/release-name: rancher-monitoring
-+  catalog.cattle.io/requests-cpu: 4500m
-+  catalog.cattle.io/requests-memory: 4000Mi
-+  catalog.cattle.io/type: cluster-tool
-+  catalog.cattle.io/ui-component: monitoring
-+  catalog.cattle.io/upstream-version: 77.9.1
  apiVersion: v2
  appVersion: v0.85.0
  dependencies:
@@ -29,7 +15,7 @@
  - condition: grafana.enabled
    name: grafana
    repository: file://./charts/grafana
-@@ -59,10 +70,6 @@
+@@ -59,10 +56,6 @@
    name: prometheus-node-exporter
    repository: file://./charts/prometheus-node-exporter
    version: 4.47.3
@@ -40,7 +26,7 @@
  - condition: rke2ControllerManager.enabled
    name: rke2ControllerManager
    repository: file://./charts/rke2ControllerManager
-@@ -112,7 +119,7 @@
+@@ -112,7 +105,7 @@
    operate end-to-end Kubernetes cluster monitoring with Prometheus using the Prometheus
    Operator.
  home: https://github.com/prometheus-operator/kube-prometheus
@@ -49,7 +35,7 @@
  keywords:
  - operator
  - prometheus
-@@ -143,7 +150,7 @@
+@@ -143,7 +136,7 @@
  - email: quentin.bisson@gmail.com
    name: QuentinBisson
    url: https://github.com/QuentinBisson
