@@ -1,11 +1,13 @@
 packages:
   rancher-logging:
+    package: rancher-logging
     "4.10":
       - "dev-v2.10"
       - "dev-v2.11"
       - "dev-v2.12"
       - "dev-v2.13"
   rancher-monitoring:
+    package: rancher-monitoring/rancher-monitoring
     "66.7":
       - "dev-v2.10"
       - "dev-v2.11"

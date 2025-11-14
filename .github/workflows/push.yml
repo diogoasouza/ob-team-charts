@@ -1,0 +1,139 @@
+name: push
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: org-${{ github.repository_owner_id }}-amd64-k8s
+    container:
+      image: registry.suse.com/bci/bci-base:latest
+    steps:
+      - name: Checkout current repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+
+      - name: Detect new chart version
+        id: detect_new_charts
+        run: |
+          if ! git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
+            echo "new_charts=" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          NEW_CHARTS=$(git diff --name-only HEAD~1 HEAD | grep -E '^charts/(rancher-monitoring|rancher-logging)/[^/]*/Chart.yaml$' | sed -e 's|charts/\(.*\)/\(.*\)/Chart.yaml|\1/\2|' | tr '\n' ' ')
+          echo "new_charts=${NEW_CHARTS}" >> $GITHUB_OUTPUT
+
+      - name: Update Downstream Chart
+        if: steps.detect_new_charts.outputs.new_charts != ''
+        env:
+          NEW_CHARTS: ${{ steps.detect_new_charts.outputs.new_charts }}
+          GH_TOKEN: ${{ secrets.CHARTS_REPO_PAT }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          set -eux
+
+          # Install dependencies
+          zypper --non-interactive in curl tar gzip git-core make
+
+          # Install yq
+          curl -L https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -o /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
+
+          # Checkout target repo
+          git clone https://oauth2:${GH_TOKEN}@github.com/diogoasouza/charts.git charts-repo
+          cd charts-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout dev-v2.13
+
+          BRANCH_NAME="bot/update-charts-$(date +%s)"
+          git checkout -b $BRANCH_NAME
+
+          declare -A new_package_versions
+          for chart_full_version in $NEW_CHARTS; do
+            CHART_NAME=$(echo $chart_full_version | cut -d'/' -f1)
+            CHART_VERSION=$(echo $chart_full_version | cut -d'/' -f2)
+
+            PACKAGE_PATH=$(yq e ".packages.$CHART_NAME.package" ../charts-config.yaml)
+            PACKAGE_YAML_PATH="packages/$PACKAGE_PATH/package.yaml"
+
+            if [ ! -f "$PACKAGE_YAML_PATH" ]; then
+              echo "package.yaml not found at $PACKAGE_YAML_PATH"
+              continue
+            fi
+
+            # Update package.yaml
+            yq e -i ".subdirectory = \"charts/$CHART_NAME/$CHART_VERSION\"" "$PACKAGE_YAML_PATH"
+            yq e -i ".commit = \"$COMMIT_SHA\"" "$PACKAGE_YAML_PATH"
+
+            CURRENT_VERSION=$(yq e '.version' "$PACKAGE_YAML_PATH")
+            if [[ "$CURRENT_VERSION" == *"-rc."* ]]; then
+              BASE_VERSION=$(echo $CURRENT_VERSION | cut -d'-' -f1)
+              RC_PART=$(echo $CURRENT_VERSION | cut -d'-' -f2)
+              RC_NUMBER=$(echo $RC_PART | cut -d'.' -f2)
+              NEW_RC_NUMBER=$((RC_NUMBER + 1))
+              NEW_VERSION="$BASE_VERSION-rc.$NEW_RC_NUMBER"
+            else
+              MAJOR=$(echo $CURRENT_VERSION | cut -d'.' -f1)
+              MINOR=$(echo $CURRENT_VERSION | cut -d'.' -f2)
+              PATCH=$(echo $CURRENT_VERSION | cut -d'.' -f3)
+              NEW_PATCH=$((PATCH + 1))
+              NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH-rc.1"
+            fi
+            yq e -i ".version = \"$NEW_VERSION\"" "$PACKAGE_YAML_PATH"
+            new_package_versions[$CHART_NAME]=$NEW_VERSION
+
+            if yq e '.additionalCharts | has(0)' "$PACKAGE_YAML_PATH" &> /dev/null; then
+                CRD_CHART_NAME="${CHART_NAME}-crd"
+                CRD_CHART_VERSION="$CHART_VERSION"
+                yq e -i '.additionalCharts[0].upstreamOptions.subdirectory = "charts/'"$CRD_CHART_NAME"'/'"$CRD_CHART_VERSION"'"' "$PACKAGE_YAML_PATH"
+                yq e -i '.additionalCharts[0].upstreamOptions.commit = "'"$COMMIT_SHA"'"' "$PACKAGE_YAML_PATH"
+            fi
+          done
+
+          if ! git diff --quiet; then
+            git add .
+            git commit -m "chore(charts): Update package.yaml"
+          else
+            echo "No package.yaml changes to commit. Exiting."
+            exit 0
+          fi
+
+          # make charts
+          for chart_full_version in $NEW_CHARTS; do
+            CHART_NAME=$(echo $chart_full_version | cut -d'/' -f1)
+            PACKAGE_PATH=$(yq e ".packages.$CHART_NAME.package" ../charts-config.yaml)
+            make charts PACKAGE="$PACKAGE_PATH"
+          done
+
+          if ! git diff --quiet; then
+            git add .
+            git commit -m "chore(charts): make charts"
+          else
+            echo "No generated chart changes to commit."
+          fi
+
+          # Update release.yaml
+          for chart_full_version in $NEW_CHARTS; do
+            CHART_NAME=$(echo $chart_full_version | cut -d'/' -f1)
+            CHART_VERSION=$(echo $chart_full_version | cut -d'/' -f2)
+            NEW_PACKAGE_VERSION=${new_package_versions[$CHART_NAME]}
+            FULL_VERSION="${NEW_PACKAGE_VERSION}+up${CHART_VERSION}"
+
+            yq e -i ".${CHART_NAME} |= [\"${FULL_VERSION}\"] + ." "release.yaml"
+
+            CRD_CHART_NAME="${CHART_NAME}-crd"
+            if yq e ".${CRD_CHART_NAME}" "release.yaml" &> /dev/null; then
+                yq e -i ".${CRD_CHART_NAME} |= [\"${FULL_VERSION}\"] + ." "release.yaml"
+            fi
+          done
+
+          if ! git diff --quiet; then
+            git add release.yaml
+            git commit -m "chore(charts): Update release.yaml"
+          fi
+
+          # Push
+          git push origin $BRANCH_NAME
