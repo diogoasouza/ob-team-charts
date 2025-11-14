@@ -5,7 +5,7 @@ on:
 
 jobs:
   build:
-    runs-on: org-${{ github.repository_owner_id }}-amd64-k8s
+    runs-on: ubuntu-latest
     container:
       image: registry.suse.com/bci/bci-base:latest
     steps:
