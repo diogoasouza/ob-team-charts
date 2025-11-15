@@ -11,22 +11,35 @@ jobs:
     container:
       image: registry.suse.com/bci/bci-base:latest
     steps:
+      - name: Install Dependencies
+        run: zypper --non-interactive in curl tar gzip git make
+
       - name: Checkout current repo
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
+      - name: Detect new chart version
+        id: detect_new_charts
+        run: |
+          if [[ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]]; then
+            echo "Initial push, skipping chart detection."
+            echo "new_charts=" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          NEW_CHARTS=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -E '^charts/(rancher-monitoring|rancher-logging)/[^/]*/Chart.yaml$' | sed -e 's|charts/\(.*\)/\(.*\)/Chart.yaml|\1/\2|' | tr '\n' ' ')
+          echo "new_charts=${NEW_CHARTS}" >> $GITHUB_OUTPUT
+
       - name: Update Downstream Chart
+        if: steps.detect_new_charts.outputs.new_charts != ''
         env:
+          NEW_CHARTS: ${{ steps.detect_new_charts.outputs.new_charts }}
           GH_TOKEN: ${{ secrets.CHARTS_REPO_PAT }}
           COMMIT_SHA: ${{ github.sha }}
         run: |
           set -eux
 
-          zypper --non-interactive in curl tar gzip git-core make
-
-          NEW_CHARTS=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -E '^charts/(rancher-monitoring|rancher-logging)/[^/]*/Chart.yaml$' | sed -e 's|charts/\(.*\)/\(.*\)/Chart.yaml|\1/\2|' | tr '\n' ' ')
-          
           if [ -z "$NEW_CHARTS" ]; then
             echo "No new charts detected. Exiting."
             exit 0
