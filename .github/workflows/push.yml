@@ -12,7 +12,7 @@ jobs:
       image: registry.suse.com/bci/bci-base:latest
     steps:
       - name: Install Dependencies
-        run: zypper --non-interactive in curl tar gzip git make
+        run: zypper --non-interactive in curl tar gzip git make jq go awk patch
 
       - name: Checkout current repo
         uses: actions/checkout@v3
@@ -22,16 +22,11 @@ jobs:
       - name: Detect new chart version
         id: detect_new_charts
         run: |
-          if [[ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]]; then
-            echo "Initial push, skipping chart detection."
-            echo "new_charts=" >> $GITHUB_OUTPUT
-            exit 0
-          fi
 
           NEW_CHARTS=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -E '^charts/(rancher-monitoring|rancher-logging)/[^/]*/Chart.yaml$' | sed -e 's|charts/\(.*\)/\(.*\)/Chart.yaml|\1/\2|' | tr '\n' ' ')
           echo "new_charts=${NEW_CHARTS}" >> $GITHUB_OUTPUT
 
-      - name: Update Downstream Chart
+      - name: Update Downstream Chart and Open PR
         if: steps.detect_new_charts.outputs.new_charts != ''
         env:
           NEW_CHARTS: ${{ steps.detect_new_charts.outputs.new_charts }}
@@ -45,8 +40,24 @@ jobs:
             exit 0
           fi
 
-          curl -L https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -o /usr/local/bin/yq
+          # Detect architecture 
+          ARCH=$(uname -m)
+          if [ "$ARCH" = "x86_64" ]; then
+            SYSTEM_ARCH="amd64"
+          elif [ "$ARCH" = "aarch64" ]; then
+            SYSTEM_ARCH="arm64"
+          else
+            echo "Unsupported architecture: $ARCH"
+            exit 1
+          fi
+          curl -L "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_${SYSTEM_ARCH}" -o /usr/local/bin/yq
           chmod +x /usr/local/bin/yq
+          
+          # Install GitHub CLI
+          curl -L https://github.com/cli/cli/releases/download/v2.53.1/gh_2.53.1_linux_${SYSTEM_ARCH}".tar.gz -o gh.tar.gz
+          tar -zxvf gh.tar.gz
+          mv gh_2.53.1_linux_${SYSTEM_ARCH}"/bin/gh /usr/local/bin/
+          rm -rf gh.tar.gz gh_2.53.1_linux_${SYSTEM_ARCH}"
 
           git clone https://oauth2:${GH_TOKEN}@github.com/diogoasouza/charts.git charts-repo
           cd charts-repo
@@ -54,7 +65,8 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout dev-v2.13
 
-          BRANCH_NAME="bot/update-charts-$(date +%s)"
+          FIRST_CHART=$(echo $NEW_CHARTS | cut -d' ' -f1)
+          BRANCH_NAME="bot/update-$(echo $FIRST_CHART | tr '/' '-')"
           git checkout -b $BRANCH_NAME
 
           declare -A new_package_versions
@@ -139,5 +151,7 @@ jobs:
           fi
 
           git push origin $BRANCH_NAME
-          echo "Changes pushed to branch $BRANCH_NAME"
-          echo "Next step is to create a Pull Request."
+          
+          PR_TITLE="chore(charts): Update from ob-team-charts"
+          PR_BODY="Automated PR to update charts from ${{ github.repository }} commit ${{ github.sha }}"
+          gh pr create --title "$PR_TITLE" --body "$PR_BODY" --base dev-v2.13 --head $BRANCH_NAME --repo diogoasouza/charts
