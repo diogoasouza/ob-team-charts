@@ -16,34 +16,25 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Detect new chart version
-        id: detect_new_charts
-        run: |
-          if [[ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]]; then
-            echo "new_charts=" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          NEW_CHARTS=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -E '^charts/(rancher-monitoring|rancher-logging)/[^/]*/Chart.yaml$' | sed -e 's|charts/\(.*\)/\(.*\)/Chart.yaml|\1/\2|' | tr '\n' ' ')
-          echo "new_charts=${NEW_CHARTS}" >> $GITHUB_OUTPUT
-
       - name: Update Downstream Chart
-        if: steps.detect_new_charts.outputs.new_charts != ''
         env:
-          NEW_CHARTS: ${{ steps.detect_new_charts.outputs.new_charts }}
           GH_TOKEN: ${{ secrets.CHARTS_REPO_PAT }}
           COMMIT_SHA: ${{ github.sha }}
         run: |
           set -eux
 
-          # Install dependencies
           zypper --non-interactive in curl tar gzip git-core make
 
-          # Install yq
+          NEW_CHARTS=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -E '^charts/(rancher-monitoring|rancher-logging)/[^/]*/Chart.yaml$' | sed -e 's|charts/\(.*\)/\(.*\)/Chart.yaml|\1/\2|' | tr '\n' ' ')
+          
+          if [ -z "$NEW_CHARTS" ]; then
+            echo "No new charts detected. Exiting."
+            exit 0
+          fi
+
           curl -L https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -o /usr/local/bin/yq
           chmod +x /usr/local/bin/yq
 
-          # Checkout target repo
           git clone https://oauth2:${GH_TOKEN}@github.com/diogoasouza/charts.git charts-repo
           cd charts-repo
           git config user.name "github-actions[bot]"
@@ -66,7 +57,6 @@ jobs:
               continue
             fi
 
-            # Update package.yaml
             yq e -i ".subdirectory = \"charts/$CHART_NAME/$CHART_VERSION\"" "$PACKAGE_YAML_PATH"
             yq e -i ".commit = \"$COMMIT_SHA\"" "$PACKAGE_YAML_PATH"
 
@@ -103,7 +93,6 @@ jobs:
             exit 0
           fi
 
-          # Generate charts
           for chart_full_version in $NEW_CHARTS; do
             CHART_NAME=$(echo $chart_full_version | cut -d'/' -f1)
             PACKAGE_PATH=$(yq e ".packages.$CHART_NAME.package" ../charts-config.yaml)
@@ -112,12 +101,11 @@ jobs:
 
           if ! git diff --quiet; then
             git add .
-            git commit -m "feat(charts): make charts"
+            git commit -m "feat(charts): Generate new chart assets"
           else
             echo "No generated chart changes to commit."
           fi
 
-          # Update release.yaml
           for chart_full_version in $NEW_CHARTS; do
             CHART_NAME=$(echo $chart_full_version | cut -d'/' -f1)
             CHART_VERSION=$(echo $chart_full_version | cut -d'/' -f2)
@@ -137,7 +125,6 @@ jobs:
             git commit -m "chore(charts): Update release.yaml"
           fi
 
-          # Push
           git push origin $BRANCH_NAME
           echo "Changes pushed to branch $BRANCH_NAME"
           echo "Next step is to create a Pull Request."
