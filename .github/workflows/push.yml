@@ -1,7 +1,9 @@
 name: push
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   build:
@@ -12,17 +14,17 @@ jobs:
       - name: Checkout current repo
         uses: actions/checkout@v3
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
       - name: Detect new chart version
         id: detect_new_charts
         run: |
-          if ! git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
+          if [[ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]]; then
             echo "new_charts=" >> $GITHUB_OUTPUT
             exit 0
           fi
 
-          NEW_CHARTS=$(git diff --name-only HEAD~1 HEAD | grep -E '^charts/(rancher-monitoring|rancher-logging)/[^/]*/Chart.yaml$' | sed -e 's|charts/\(.*\)/\(.*\)/Chart.yaml|\1/\2|' | tr '\n' ' ')
+          NEW_CHARTS=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -E '^charts/(rancher-monitoring|rancher-logging)/[^/]*/Chart.yaml$' | sed -e 's|charts/\(.*\)/\(.*\)/Chart.yaml|\1/\2|' | tr '\n' ' ')
           echo "new_charts=${NEW_CHARTS}" >> $GITHUB_OUTPUT
 
       - name: Update Downstream Chart
@@ -101,7 +103,7 @@ jobs:
             exit 0
           fi
 
-          # make charts
+          # Generate charts
           for chart_full_version in $NEW_CHARTS; do
             CHART_NAME=$(echo $chart_full_version | cut -d'/' -f1)
             PACKAGE_PATH=$(yq e ".packages.$CHART_NAME.package" ../charts-config.yaml)
@@ -110,7 +112,7 @@ jobs:
 
           if ! git diff --quiet; then
             git add .
-            git commit -m "chore(charts): make charts"
+            git commit -m "feat(charts): make charts"
           else
             echo "No generated chart changes to commit."
           fi
@@ -137,3 +139,5 @@ jobs:
 
           # Push
           git push origin $BRANCH_NAME
+          echo "Changes pushed to branch $BRANCH_NAME"
+          echo "Next step is to create a Pull Request."
