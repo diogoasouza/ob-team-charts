@@ -61,8 +61,8 @@ jobs:
           # Install GitHub CLI
           curl -L "https://github.com/cli/cli/releases/download/v2.82.0/gh_2.82.0_linux_${SYSTEM_ARCH}.tar.gz" -o gh.tar.gz
           tar -zxvf gh.tar.gz
-          mv "gh_2.53.1_linux_${SYSTEM_ARCH}/bin/gh" /usr/local/bin/
-          rm -rf gh.tar.gz "gh_2.53.1_linux_${SYSTEM_ARCH}"
+          mv "gh_2.82.0_linux_${SYSTEM_ARCH}/bin/gh" /usr/local/bin/
+          rm -rf gh.tar.gz "gh_2.82.0_linux_${SYSTEM_ARCH}"
 
           git clone https://oauth2:${GH_TOKEN}@github.com/diogoasouza/charts.git charts-repo
           cd charts-repo
