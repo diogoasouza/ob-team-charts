@@ -22,6 +22,8 @@ jobs:
       - name: Detect new chart version
         id: detect_new_charts
         run: |
+          # Explicitly fetch the 'before' commit to ensure it's available for diffing
+          git fetch origin ${{ github.event.before }}
 
           NEW_CHARTS=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -E '^charts/(rancher-monitoring|rancher-logging)/[^/]*/Chart.yaml$' | sed -e 's|charts/\(.*\)/\(.*\)/Chart.yaml|\1/\2|' | tr '\n' ' ')
           echo "new_charts=${NEW_CHARTS}" >> $GITHUB_OUTPUT
@@ -54,10 +56,10 @@ jobs:
           chmod +x /usr/local/bin/yq
           
           # Install GitHub CLI
-          curl -L https://github.com/cli/cli/releases/download/v2.53.1/gh_2.53.1_linux_${SYSTEM_ARCH}".tar.gz -o gh.tar.gz
+          curl -L "https://github.com/cli/cli/releases/latest/download/gh_2.53.1_linux_${SYSTEM_ARCH}.tar.gz" -o gh.tar.gz
           tar -zxvf gh.tar.gz
-          mv gh_2.53.1_linux_${SYSTEM_ARCH}"/bin/gh /usr/local/bin/
-          rm -rf gh.tar.gz gh_2.53.1_linux_${SYSTEM_ARCH}"
+          mv "gh_2.53.1_linux_${SYSTEM_ARCH}/bin/gh" /usr/local/bin/
+          rm -rf gh.tar.gz "gh_2.53.1_linux_${SYSTEM_ARCH}"
 
           git clone https://oauth2:${GH_TOKEN}@github.com/diogoasouza/charts.git charts-repo
           cd charts-repo
