@@ -63,7 +63,7 @@ jobs:
               echo "$chart_full_version" >> "/tmp/branch_charts/$branch"
             done
           done
-
+          ls /tmp/branch_charts/
           # --- Checkout downstream repo ---
           git clone https://oauth2:${GH_TOKEN}@github.com/diogoasouza/charts.git charts-repo
           cd charts-repo
