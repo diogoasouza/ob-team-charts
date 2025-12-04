@@ -57,8 +57,7 @@ jobs:
             CHART_NAME=$(echo $chart_full_version | cut -d'/' -f1)
             CHART_VERSION=$(echo $chart_full_version | cut -d'/' -f2)
             UPSTREAM_VERSION=$(echo $CHART_VERSION | cut -d'.' -f1,2)
-            TARGET_BRANCHES=$(yq e ".packages.$CHART_NAME.\"$UPSTREAM_VERSION\"[]" "charts-config.yaml")
-            echo $TARGET_BRANCHES
+            TARGET_BRANCHES=$(yq e ".packages.$CHART_NAME.\"$UPSTREAM_VERSION\".branches[]" "charts-config.yaml")
             for branch in $TARGET_BRANCHES; do
               echo "$chart_full_version" >> "/tmp/branch_charts/$branch"
             done
@@ -84,7 +83,8 @@ jobs:
             for chart_full_version in $CHARTS_FOR_BRANCH; do
               CHART_NAME=$(echo $chart_full_version | cut -d'/' -f1)
               CHART_VERSION=$(echo $chart_full_version | cut -d'/' -f2)
-              PACKAGE_PATH=$(yq e ".packages.$CHART_NAME.package" ../charts-config.yaml)
+              UPSTREAM_VERSION=$(echo $CHART_VERSION | cut -d'.' -f1,2)
+              PACKAGE_PATH=$(yq e ".packages.$CHART_NAME.\"$UPSTREAM_VERSION\".package" ../charts-config.yaml)
               PACKAGE_YAML_PATH="packages/$PACKAGE_PATH/package.yaml"
               if [ ! -f "$PACKAGE_YAML_PATH" ]; then echo "package.yaml not found at $PACKAGE_YAML_PATH"; continue; fi
               
@@ -109,7 +109,9 @@ jobs:
             # --- 2. Generate chart assets ---
             for chart_full_version in $CHARTS_FOR_BRANCH; do
               CHART_NAME=$(echo $chart_full_version | cut -d'/' -f1)
-              PACKAGE_PATH=$(yq e ".packages.$CHART_NAME.package" ../charts-config.yaml)
+              CHART_VERSION=$(echo $chart_full_version | cut -d'/' -f2)
+              UPSTREAM_VERSION=$(echo $CHART_VERSION | cut -d'.' -f1,2)
+              PACKAGE_PATH=$(yq e ".packages.$CHART_NAME.\"$UPSTREAM_VERSION\".package" ../charts-config.yaml)
               make charts PACKAGE="$PACKAGE_PATH"
             done
             if ! git diff --quiet --exit-code; then git add . && git commit -m "feat(charts): Generate new chart assets"; fi
