@@ -69,7 +69,7 @@ jobs:
           done
 
           # --- Checkout downstream repo ---
-          git clone https://oauth2:${GH_TOKEN}@github.com/rancher/charts.git charts-repo
+          git clone https://oauth2:${GH_TOKEN}@github.com/diogoasouza/charts.git charts-repo
           cd charts-repo
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -130,5 +130,5 @@ jobs:
             git push origin "$BRANCH_NAME"
             PR_TITLE="chore(charts): Update from upstream for $TARGET_BRANCH"
             PR_BODY="Automated PR to update charts from ${{ github.repository }} commit ${{ github.sha }}"
-            gh pr create --title "$PR_TITLE" --body "$PR_BODY" --base "$TARGET_BRANCH" --head "$BRANCH_NAME" --repo rancher/charts
+            gh pr create --title "$PR_TITLE" --body "$PR_BODY" --base "$TARGET_BRANCH" --head "$BRANCH_NAME" --repo diogoasouza/charts
           done
