@@ -85,7 +85,7 @@ jobs:
             echo $MANIFEST_REF
             IS_FROZEN=$(yq e ".spec.forProvider.conditions[].refName[].include[] | select(. == \"$MANIFEST_REF\")" /tmp/code-freeze.yaml)
             if [ -n "$IS_FROZEN" ]; then
-              echo "Branch $MANIFEST_BRANCH_NAME is frozen. Skipping."
+              echo "Branch $MANIFEST_BRANCH_NAME is frozen. Skipping." | tee -a "$GITHUB_STEP_SUMMARY"
               continue
             fi
             echo "not frozen"
