@@ -52,7 +52,7 @@ jobs:
           curl -L "https://github.com/cli/cli/releases/download/v2.82.0/gh_2.82.0_linux_${SYSTEM_ARCH}.tar.gz" -o gh.tar.gz && tar -zxvf gh.tar.gz && mv "gh_2.82.0_linux_${SYSTEM_ARCH}/bin/gh" /usr/local/bin/gh && rm -rf gh.tar.gz "gh_2.82.0_linux_${SYSTEM_ARCH}"
 
           # --- Download Freeze Manifest ---
-          curl -L -H "Authorization: token ${GH_TOKEN}" "https://raw.githubusercontent.com/rancher/org/main/manifests/resources/RepositoryRuleset/rancher/code-freeze.yaml" -o /tmp/code-freeze.yaml
+          curl -L -H "Authorization: token ${GH_TOKEN}" "https://raw.githubusercontent.com/rancher/org/refs/heads/main/manifests/resources/RepositoryRuleset/rancher/code-freeze.yaml" -o /tmp/code-freeze.yaml
 
           # --- Group charts by target branch ---
           rm -rf /tmp/branch_data && mkdir /tmp/branch_data
