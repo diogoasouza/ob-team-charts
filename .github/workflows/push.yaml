@@ -49,6 +49,9 @@ jobs:
           curl -L "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_${SYSTEM_ARCH}" -o /usr/local/bin/yq && chmod +x /usr/local/bin/yq
           curl -L "https://github.com/cli/cli/releases/download/v2.82.0/gh_2.82.0_linux_${SYSTEM_ARCH}.tar.gz" -o gh.tar.gz && tar -zxvf gh.tar.gz && mv "gh_2.82.0_linux_${SYSTEM_ARCH}/bin/gh" /usr/local/bin/gh && rm -rf gh.tar.gz "gh_2.82.0_linux_${SYSTEM_ARCH}"
 
+          # --- Download Freeze Manifest ---
+          curl -L -H "Authorization: token ${GH_TOKEN}" "https://raw.githubusercontent.com/rancher/org/main/manifests/resources/RepositoryRuleset/rancher/code-freeze.yaml" -o /tmp/code-freeze.yaml
+
           # --- Group charts by target branch ---
           rm -rf /tmp/branch_data && mkdir /tmp/branch_data
           for chart_full_version in $NEW_CHARTS; do
@@ -56,12 +59,9 @@ jobs:
             CHART_VERSION=$(echo $chart_full_version | cut -d'/' -f2)
             UPSTREAM_VERSION=$(echo $CHART_VERSION | cut -d'.' -f1,2)
           
-            # Read the branches array and process each entry
             yq e ".packages.$CHART_NAME.\"$UPSTREAM_VERSION\".branches" -o=json "charts-config.yaml" | jq -c '.[]' | while read -r branch_config; do
               TARGET_BRANCH=$(echo "$branch_config" | jq -r '.branch')
               PACKAGE_PATH=$(echo "$branch_config" | jq -r '.package')
-          
-              # Store the chart version and its specific package path for the target branch
               echo "${chart_full_version},${PACKAGE_PATH}" >> "/tmp/branch_data/${TARGET_BRANCH}"
             done
           done
@@ -75,6 +75,15 @@ jobs:
           # --- Process each target branch ---
           for branch_file in /tmp/branch_data/*; do
             TARGET_BRANCH=$(basename "$branch_file")
+
+            # --- Check if branch is frozen ---
+            MANIFEST_BRANCH_NAME=$(echo "$TARGET_BRANCH" | sed 's|dev-v|release/v|')
+            MANIFEST_REF="refs/heads/$MANIFEST_BRANCH_NAME"
+            IS_FROZEN=$(yq e ".spec.forProvider.conditions[].refName[].include[] | select(. == \"$MANIFEST_REF\")" /tmp/code-freeze.yaml)
+            if [ -n "$IS_FROZEN" ]; then
+              echo "Branch $MANIFEST_BRANCH_NAME is frozen. Skipping."
+              continue
+            fi
 
             git checkout -B "$TARGET_BRANCH" "origin/$TARGET_BRANCH"
             BRANCH_NAME="bot/update-charts-for-$TARGET_BRANCH-$(date +%s)"
