@@ -53,7 +53,8 @@ jobs:
 
           # --- Download Freeze Manifest ---
           curl -L -H "Authorization: token ${GH_TOKEN}" "https://raw.githubusercontent.com/rancher/org/refs/heads/main/manifests/resources/RepositoryRuleset/rancher/code-freeze.yaml" -o /tmp/code-freeze.yaml
-
+          cat /tmp/code-freeze.yaml
+          
           # --- Group charts by target branch ---
           rm -rf /tmp/branch_data && mkdir /tmp/branch_data
           for chart_full_version in $NEW_CHARTS; do
@@ -81,12 +82,13 @@ jobs:
             # --- Check if branch is frozen ---
             MANIFEST_BRANCH_NAME=$(echo "$TARGET_BRANCH" | sed 's|dev-v|release/v|')
             MANIFEST_REF="refs/heads/$MANIFEST_BRANCH_NAME"
+            echo $MANIFEST_REF
             IS_FROZEN=$(yq e ".spec.forProvider.conditions[].refName[].include[] | select(. == \"$MANIFEST_REF\")" /tmp/code-freeze.yaml)
             if [ -n "$IS_FROZEN" ]; then
               echo "Branch $MANIFEST_BRANCH_NAME is frozen. Skipping."
               continue
             fi
-
+            echo "not frozen"
             git checkout -B "$TARGET_BRANCH" "origin/$TARGET_BRANCH"
             BRANCH_NAME="bot/update-charts-for-$TARGET_BRANCH-$(date +%s)"
             git checkout -b "$BRANCH_NAME"

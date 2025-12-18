@@ -1,0 +1,57 @@
+---
+apiVersion: repo.github.upbound.io/v1alpha1
+kind: RepositoryRuleset
+metadata:
+  name: code-freeze
+  annotations:
+    crossplane.io/external-name: '1322160'
+spec:
+  providerConfigRef:
+    name: rancher
+  deletionPolicy: Delete
+  forProvider:
+    name: code-freeze
+    repository: rancher
+    enforcement: active
+    target: branch
+    conditions:
+    - refName:
+      - include:
+        - refs/heads/release/v2.7.*
+        - refs/heads/release/v2.13
+        - refs/heads/release/v2.12
+        - refs/heads/release/v2.11
+        exclude:
+        - refs/heads/release/v2.7.15
+        - refs/heads/release/v2.7
+        - refs/heads/release/v2.8
+        - refs/heads/release/v2.10
+        - refs/heads/release/v2.9
+    rules:
+    - deletion: true
+      nonFastForward: true
+      creation: true
+      update: true
+      pullRequest:
+      - requiredApprovingReviewCount: 1
+        dismissStaleReviewsOnPush: true
+        requireCodeOwnerReview: false
+        requireLastPushApproval: true
+        requiredReviewThreadResolution: false
+      requiredStatusChecks:
+      - requiredCheck:
+        - context: check-changes
+          integrationId: 15368
+    bypassActors:
+    - actorId: 1
+      actorType: OrganizationAdmin
+      bypassMode: always
+    - actorId: 5
+      actorType: RepositoryRole
+      bypassMode: always
+    - actorId: 1087529
+      actorType: Team
+      bypassMode: always
+    - actorId: 8828411
+      actorType: Team
+      bypassMode: always
