@@ -12644,9 +12644,9 @@ entries:
       catalog.cattle.io/namespace: cattle-monitoring-system
       catalog.cattle.io/release-name: rancher-monitoring-crd
     apiVersion: v2
-    created: "2026-03-13T16:28:44.03576-03:00"
+    created: "2026-03-13T16:33:57.994186-03:00"
     description: Installs the CRDs for rancher-monitoring.
-    digest: 562e3b68312661c325b5a9fce8e3c147578a725b2591ea65637a3d832dc29d9b
+    digest: 46866fe76d3df0d457cbb711fe2c243abe108b6a1d14240d588a0efffff5af53
     name: rancher-monitoring-crd
     type: application
     urls:

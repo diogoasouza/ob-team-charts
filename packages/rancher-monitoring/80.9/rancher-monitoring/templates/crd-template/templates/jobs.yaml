@@ -83,10 +83,11 @@ spec:
           - /bin/sh
           - -c
           - >
+            sleep 90;
             echo "Waiting for rancher-monitoring to be uninstalled...";
             time_limit=30;
             time_elapsed=0;
-            kubectl get apps -n cattle-monitoring-system rancher-monitoring
+            kubectl get apps -n cattle-monitoring-system rancher-monitoring;
             while kubectl get apps -n cattle-monitoring-system rancher-monitoring >/dev/null 2>&1; do
               if [ $time_elapsed -ge $time_limit ]; then
                 echo "Timeout waiting for rancher-monitoring to be uninstalled";
