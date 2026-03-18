@@ -1,17 +1,15 @@
-{{- if and .Values.grafana.enabled .Values.grafana.defaultDashboardsEnabled }}
+{{- if and (include "rancher-monitoring.dashboardArtifacts.enabled" .) .Values.dashboardArtifacts.groups.rancherCore }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  namespace: {{ .Values.grafana.defaultDashboards.namespace }}
+  namespace: {{ include "rancher-monitoring.dashboardNamespace" . }}
   name: rancher-default-dashboards-home
+  {{- with (include "rancher-monitoring.dashboardAnnotations" .) }}
   annotations:
-{{ toYaml .Values.grafana.sidecar.dashboards.annotations | indent 4 }}
+{{ . | indent 4 }}
+  {{- end }}
   labels:
-    {{- if $.Values.grafana.sidecar.dashboards.label }}
-    {{ $.Values.grafana.sidecar.dashboards.label }}: "1"
-    {{- end }}
-    app: {{ template "kube-prometheus-stack.name" $ }}-grafana
-{{ include "kube-prometheus-stack.labels" $ | indent 4 }}
+{{ include "rancher-monitoring.dashboardLabels" . | indent 4 }}
 data:
 {{ (.Files.Glob "files/rancher/home/*").AsConfig | indent 2 }}
 {{- end }}

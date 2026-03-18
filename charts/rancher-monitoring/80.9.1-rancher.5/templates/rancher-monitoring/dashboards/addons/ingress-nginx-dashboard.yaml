@@ -1,18 +1,15 @@
-{{- if and .Values.grafana.enabled .Values.grafana.defaultDashboardsEnabled .Values.ingressNginx.enabled }}
+{{- if and (include "rancher-monitoring.dashboardArtifacts.enabled" .) .Values.dashboardArtifacts.groups.ingressNginx }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  namespace: {{ .Values.grafana.defaultDashboards.namespace }}
-  name: {{ printf "%s-%s" (include "kube-prometheus-stack.fullname" $) "ingress-nginx" | trunc 63 | trimSuffix "-" }}
-  {{- if .Values.grafana.sidecar.dashboards.annotations }}
-  annotations: {{ toYaml .Values.grafana.sidecar.dashboards.annotations | nindent 4 }}
+  namespace: {{ include "rancher-monitoring.dashboardNamespace" . }}
+  name: {{ printf "%s-%s" (include "rancher-monitoring.fullname" .) "ingress-nginx" | trunc 63 | trimSuffix "-" }}
+  {{- with (include "rancher-monitoring.dashboardAnnotations" .) }}
+  annotations:
+{{ . | indent 4 }}
   {{- end }}
   labels:
-    {{- if $.Values.grafana.sidecar.dashboards.label }}
-    {{ $.Values.grafana.sidecar.dashboards.label }}: "1"
-    {{- end }}
-    app: {{ template "kube-prometheus-stack.name" $ }}-grafana
-{{ include "kube-prometheus-stack.labels" $ | indent 4 }}
+{{ include "rancher-monitoring.dashboardLabels" . | indent 4 }}
 data:
 {{ (.Files.Glob "files/ingress-nginx/*").AsConfig | indent 2 }}
 {{- end }}

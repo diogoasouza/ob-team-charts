@@ -1318,7 +1318,7 @@
       },
       "id": 2055,
       "options": {
-        "content": "## About Rancher Monitoring\n\nRancher Monitoring is a Helm chart developed by Rancher that is powered by [Prometheus Operator](https://github.com/prometheus-operator/prometheus-operator). It is based on the upstream [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack) Helm chart maintained by the Prometheus community.\n\nBy default, the chart deploys Grafana alongside a set of Grafana dashboards curated by the [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus) project.\n\nFor more information on how Rancher Monitoring differs from [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack), please view the CHANGELOG.md of the rancher-monitoring chart located in the [rancher/charts](https://github.com/rancher/charts) repository.\n\nFor more information about how to configure Rancher Monitoring, please view the [Rancher docs](https://ranchermanager.docs.rancher.com/integrations-in-rancher/monitoring-and-alerting).\n\n",
+        "content": "## About Rancher Monitoring\n\nRancher Monitoring is a Rancher-provided dashboard artifact chart. This prototype keeps the `rancher-monitoring` chart identity while publishing dashboard ConfigMaps and external integration metadata for a separately managed Grafana instance.\n\nThis chart does not deploy Grafana, Prometheus, Alertmanager, exporters, or PushProx. Bring your own Grafana and metrics pipeline, then wire those services to the dashboard artifacts delivered by this chart.\n\nFor more information about configuring Rancher monitoring and alerting integrations, see the [Rancher docs](https://ranchermanager.docs.rancher.com/integrations-in-rancher/monitoring-and-alerting).\n\n",
         "mode": "markdown"
       },
       "pluginVersion": "7.1.0",
@@ -1341,9 +1341,7 @@
         "hide": 0,
         "label": "Data Source",
         "name": "datasource",
-        "options": [
-
-        ],
+        "options": [],
         "query": "prometheus",
         "refresh": 1,
         "regex": "",
