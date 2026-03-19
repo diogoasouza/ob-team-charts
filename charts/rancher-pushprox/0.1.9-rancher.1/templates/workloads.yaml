@@ -1,0 +1,211 @@
+{{- range $name, $target := .Values.targets }}
+{{- $cfg := include "rancher-pushprox.targetConfig" (dict "root" $ "target" $target) | fromYaml }}
+{{- if and $target.enabled $cfg.proxy.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "rancher-pushprox.proxyName" (dict "root" $ "name" $name "cfg" $cfg) }}
+  namespace: {{ include "rancher-pushprox.targetNamespace" (dict "root" $ "cfg" $cfg) }}
+  labels:
+{{ include "rancher-pushprox.proxyLabels" (dict "root" $ "name" $name "cfg" $cfg) | indent 4 }}
+    pushprox-exporter: proxy
+spec:
+  selector:
+    matchLabels:
+{{ include "rancher-pushprox.proxySelectorLabels" (dict "root" $ "name" $name "cfg" $cfg) | indent 6 }}
+  template:
+    metadata:
+      labels:
+{{ include "rancher-pushprox.proxyLabels" (dict "root" $ "name" $name "cfg" $cfg) | indent 8 }}
+        pushprox-exporter: proxy
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      nodeSelector:
+{{ include "rancher-pushprox.linuxNodeSelector" $ | indent 8 }}
+{{- with $cfg.proxy.nodeSelector }}
+{{ toYaml . | indent 8 }}
+{{- end }}
+      tolerations:
+{{ include "rancher-pushprox.linuxNodeTolerations" $ | indent 8 }}
+{{- with $cfg.proxy.tolerations }}
+{{ toYaml . | indent 8 }}
+{{- end }}
+      serviceAccountName: {{ include "rancher-pushprox.proxyName" (dict "root" $ "name" $name "cfg" $cfg) }}
+{{ include "rancher-pushprox.imagePullSecrets" $ | indent 6 }}
+      containers:
+        - name: pushprox-proxy
+          image: {{ include "rancher-pushprox.proxyImage" (dict "root" $ "cfg" $cfg) }}
+          command:
+{{ toYaml $cfg.proxy.command | indent 12 }}
+{{- with $cfg.proxy.resources }}
+          resources:
+{{ toYaml . | indent 12 }}
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "rancher-pushprox.proxyName" (dict "root" $ "name" $name "cfg" $cfg) }}
+  namespace: {{ include "rancher-pushprox.targetNamespace" (dict "root" $ "cfg" $cfg) }}
+  labels:
+{{ include "rancher-pushprox.proxyLabels" (dict "root" $ "name" $name "cfg" $cfg) | indent 4 }}
+spec:
+  ports:
+    - name: pp-proxy
+      port: {{ $cfg.proxy.port }}
+      protocol: TCP
+      targetPort: {{ $cfg.proxy.port }}
+  selector:
+{{ include "rancher-pushprox.proxySelectorLabels" (dict "root" $ "name" $name "cfg" $cfg) | indent 4 }}
+{{- end }}
+{{- if and $target.enabled $cfg.clients.enabled }}
+---
+apiVersion: apps/v1
+kind: {{ if $cfg.clients.deployment.enabled }}Deployment{{ else }}DaemonSet{{ end }}
+metadata:
+  name: {{ include "rancher-pushprox.clientName" (dict "root" $ "name" $name "cfg" $cfg) }}
+  namespace: {{ include "rancher-pushprox.targetNamespace" (dict "root" $ "cfg" $cfg) }}
+  labels:
+{{ include "rancher-pushprox.clientLabels" (dict "root" $ "name" $name "cfg" $cfg) | indent 4 }}
+    pushprox-exporter: client
+spec:
+{{- if $cfg.clients.deployment.enabled }}
+  replicas: {{ $cfg.clients.deployment.replicas }}
+{{- end }}
+  selector:
+    matchLabels:
+{{ include "rancher-pushprox.clientSelectorLabels" (dict "root" $ "name" $name "cfg" $cfg) | indent 6 }}
+  template:
+    metadata:
+      labels:
+{{ include "rancher-pushprox.clientLabels" (dict "root" $ "name" $name "cfg" $cfg) | indent 8 }}
+        pushprox-exporter: client
+    spec:
+{{- with $cfg.clients.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+      nodeSelector:
+{{ include "rancher-pushprox.linuxNodeSelector" $ | indent 8 }}
+{{- with $cfg.clients.nodeSelector }}
+{{ toYaml . | indent 8 }}
+{{- end }}
+      tolerations:
+{{ include "rancher-pushprox.linuxNodeTolerations" $ | indent 8 }}
+{{- with $cfg.clients.tolerations }}
+{{ toYaml . | indent 8 }}
+{{- end }}
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      serviceAccountName: {{ include "rancher-pushprox.clientName" (dict "root" $ "name" $name "cfg" $cfg) }}
+{{ include "rancher-pushprox.imagePullSecrets" $ | indent 6 }}
+      containers:
+        - name: pushprox-client
+          image: {{ include "rancher-pushprox.clientImage" (dict "root" $ "cfg" $cfg) }}
+          command:
+{{ toYaml $cfg.clients.command | indent 12 }}
+          args:
+            - --fqdn=$(HOST_IP)
+            - --proxy-url=$(PROXY_URL)
+{{- if $cfg.clients.metrics.enabled }}
+            - --metrics-addr=$(PORT)
+{{- end }}
+            - --allow-port={{ $cfg.metricsPort }}
+{{- if $cfg.clients.useLocalhost }}
+            - --use-localhost
+{{- end }}
+{{- if $cfg.clients.https.enabled }}
+{{- if $cfg.clients.https.insecureSkipVerify }}
+            - --insecure-skip-verify
+{{- end }}
+{{- if $cfg.clients.https.useServiceAccountCredentials }}
+            - --token-path=/var/run/secrets/kubernetes.io/serviceaccount/token
+{{- end }}
+{{- if $cfg.clients.https.certDir }}
+            - --tls.cert=/etc/ssl/push-proxy/push-proxy.pem
+            - --tls.key=/etc/ssl/push-proxy/push-proxy-key.pem
+            - --tls.cacert=/etc/ssl/push-proxy/push-proxy-ca-cert.pem
+{{- end }}
+{{- end }}
+          env:
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+{{- if $cfg.clients.metrics.enabled }}
+            - name: PORT
+              value: :{{ $cfg.clients.port | quote }}
+{{- end }}
+            - name: PROXY_URL
+              value: {{ include "rancher-pushprox.proxyUrl" (dict "root" $ "name" $name "cfg" $cfg) | quote }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+{{- if and $cfg.clients.https.enabled $cfg.clients.https.certDir }}
+          volumeMounts:
+            - name: metrics-cert-dir
+              mountPath: /etc/ssl/push-proxy
+{{- end }}
+{{- with $cfg.clients.resources }}
+          resources:
+{{ toYaml . | indent 12 }}
+{{- end }}
+{{- if and $cfg.clients.https.enabled $cfg.clients.https.certDir }}
+      initContainers:
+        - name: copy-certs
+          image: {{ include "rancher-pushprox.copyCertsImage" (dict "root" $ "cfg" $cfg) }}
+          command:
+            - sh
+            - -c
+            - |
+              CERT_FILE_SOURCE=$(find /etc/source/ -type f -name "${CERT_FILE_NAME}" | sort -r | head -n 1)
+              KEY_FILE_SOURCE=$(find /etc/source/ -type f -name "${KEY_FILE_NAME}" | sort -r | head -n 1)
+              CACERT_FILE_SOURCE=$(find /etc/source/ -type f -name "${CACERT_FILE_NAME}" | sort -r | head -n 1)
+
+              test -z "${CERT_FILE_SOURCE}" && echo "Failed to find cert file" && exit 1
+              test -z "${KEY_FILE_SOURCE}" && echo "Failed to find key file" && exit 1
+              test -z "${CACERT_FILE_SOURCE}" && echo "Failed to find cacert file" && exit 1
+
+              cp "${CERT_FILE_SOURCE}" "${CERT_FILE_TARGET}" || exit 1
+              chmod 444 "${CERT_FILE_TARGET}" || exit 1
+              cp "${KEY_FILE_SOURCE}" "${KEY_FILE_TARGET}" || exit 1
+              chmod 444 "${KEY_FILE_TARGET}" || exit 1
+              cp "${CACERT_FILE_SOURCE}" "${CACERT_FILE_TARGET}" || exit 1
+              chmod 444 "${CACERT_FILE_TARGET}" || exit 1
+          env:
+            - name: CERT_FILE_NAME
+              value: {{ $cfg.clients.https.certFile | quote }}
+            - name: KEY_FILE_NAME
+              value: {{ $cfg.clients.https.keyFile | quote }}
+            - name: CACERT_FILE_NAME
+              value: {{ $cfg.clients.https.caCertFile | quote }}
+            - name: CERT_FILE_TARGET
+              value: /etc/ssl/push-proxy/push-proxy.pem
+            - name: KEY_FILE_TARGET
+              value: /etc/ssl/push-proxy/push-proxy-key.pem
+            - name: CACERT_FILE_TARGET
+              value: /etc/ssl/push-proxy/push-proxy-ca-cert.pem
+          securityContext:
+            runAsNonRoot: false
+{{- if and $.Values.global.seLinux.enabled $cfg.clients.https.seLinuxOptions }}
+            seLinuxOptions:
+{{ toYaml $cfg.clients.https.seLinuxOptions | indent 14 }}
+{{- end }}
+          volumeMounts:
+            - name: metrics-cert-dir-source
+              mountPath: /etc/source
+              readOnly: true
+            - name: metrics-cert-dir
+              mountPath: /etc/ssl/push-proxy
+      volumes:
+        - name: metrics-cert-dir-source
+          hostPath:
+            path: {{ $cfg.clients.https.certDir | quote }}
+        - name: metrics-cert-dir
+          emptyDir: {}
+{{- end }}
+{{- end }}
+{{- end }}

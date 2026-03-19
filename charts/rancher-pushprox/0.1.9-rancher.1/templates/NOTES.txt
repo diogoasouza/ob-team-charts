@@ -1,0 +1,14 @@
+The `rancher-pushprox` prototype chart has been installed.
+
+This chart is intended as an optional add-on for dashboard-only `rancher-monitoring`.
+It restores a Rancher-owned PushProx path for control-plane metrics without putting
+that collection logic back into the main chart.
+
+Targets are disabled by default. Enable one or more entries under `targets.*.enabled`,
+for example:
+
+  --set targets.k3sServer.enabled=true
+  --set targets.rkeEtcd.enabled=true
+
+Install this chart into `cattle-monitoring-system` unless you have intentionally
+customized the monitoring namespace.

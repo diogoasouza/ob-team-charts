@@ -1,0 +1,49 @@
+{{- range $name, $target := .Values.targets }}
+{{- $cfg := include "rancher-pushprox.targetConfig" (dict "root" $ "target" $target) | fromYaml }}
+{{- if and $target.enabled $cfg.serviceMonitor.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "rancher-pushprox.serviceMonitorName" (dict "root" $ "name" $name "cfg" $cfg) }}
+  namespace: {{ include "rancher-pushprox.serviceMonitorNamespace" (dict "root" $ "cfg" $cfg) }}
+  labels:
+{{ include "rancher-pushprox.clientLabels" (dict "root" $ "name" $name "cfg" $cfg) | indent 4 }}
+{{- with $cfg.serviceMonitor.additionalLabels }}
+{{ toYaml . | indent 4 }}
+{{- end }}
+{{- with $cfg.serviceMonitor.annotations }}
+  annotations:
+{{ toYaml . | indent 4 }}
+{{- end }}
+spec:
+  endpoints:
+{{ include "rancher-pushprox.serviceMonitorEndpoints" (dict "root" $ "name" $name "cfg" $cfg) | indent 4 }}
+  jobLabel: {{ default "component" $cfg.serviceMonitor.jobLabel }}
+  podTargetLabels:
+    - component
+    - pushprox-exporter
+  namespaceSelector:
+    matchNames:
+      - {{ include "rancher-pushprox.targetNamespace" (dict "root" $ "cfg" $cfg) }}
+  selector:
+    matchLabels:
+{{ include "rancher-pushprox.clientSelectorLabels" (dict "root" $ "name" $name "cfg" $cfg) | indent 6 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "rancher-pushprox.clientName" (dict "root" $ "name" $name "cfg" $cfg) }}
+  namespace: {{ include "rancher-pushprox.targetNamespace" (dict "root" $ "cfg" $cfg) }}
+  labels:
+{{ include "rancher-pushprox.clientLabels" (dict "root" $ "name" $name "cfg" $cfg) | indent 4 }}
+spec:
+  ports:
+    - name: metrics
+      port: {{ $cfg.metricsPort }}
+      protocol: TCP
+      targetPort: {{ $cfg.metricsPort }}
+  selector:
+{{ include "rancher-pushprox.clientSelectorLabels" (dict "root" $ "name" $name "cfg" $cfg) | indent 4 }}
+{{- end }}
+{{- end }}

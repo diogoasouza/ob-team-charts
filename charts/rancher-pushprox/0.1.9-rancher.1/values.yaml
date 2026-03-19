@@ -1,0 +1,446 @@
+# Default values for the rancher-pushprox prototype chart.
+
+nameOverride: rancher-pushprox
+fullnameOverride: ""
+namespaceOverride: ""
+commonLabels: {}
+extraManifests: []
+
+global:
+  cattle:
+    systemDefaultRegistry: ""
+    clusterId: ""
+    clusterName: ""
+    psp:
+      enabled: false
+  seLinux:
+    enabled: false
+  imagePullSecretName: ""
+  imagePullSecrets: []
+  pushProx: {}
+
+defaults:
+  namespaceOverride: ""
+  kubeVersionOverrides: []
+  serviceMonitor:
+    enabled: true
+    namespaceOverride: ""
+    annotations: {}
+    additionalLabels: {}
+    jobLabel: component
+    endpoints:
+      - port: metrics
+  proxy:
+    enabled: true
+    port: 8080
+    image:
+      repository: rancher/pushprox
+      tag: v0.1.9
+    command:
+      - pushprox-proxy
+    resources: {}
+    nodeSelector: {}
+    tolerations: []
+  clients:
+    enabled: true
+    port: 9369
+    proxyUrl: ""
+    useLocalhost: false
+    image:
+      repository: rancher/pushprox
+      tag: v0.1.9
+    command:
+      - pushprox-client
+    copyCertsImage:
+      repository: rancher/mirrored-library-busybox
+      tag: 1.37.0
+    metrics:
+      enabled: false
+    https:
+      enabled: false
+      forceHTTPSScheme: false
+      useServiceAccountCredentials: false
+      insecureSkipVerify: false
+      certDir: ""
+      certFile: ""
+      keyFile: ""
+      caCertFile: ""
+      seLinuxOptions: {}
+      authenticationMethod:
+        bearerTokenFile:
+          enabled: false
+          bearerTokenFilePath: /var/run/secrets/kubernetes.io/serviceaccount/token
+        bearerTokenSecret:
+          enabled: false
+        authorization:
+          enabled: false
+          type: bearer
+          credentials:
+            key: token
+            optional: false
+    rbac:
+      additionalRules: []
+    resources: {}
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+    deployment:
+      enabled: false
+      replicas: 0
+
+targets:
+  rkeControllerManager:
+    enabled: false
+    component: kube-controller-manager
+    metricsPort: 10257
+    clients:
+      port: 10011
+      useLocalhost: true
+      https:
+        enabled: true
+        insecureSkipVerify: true
+        useServiceAccountCredentials: true
+      nodeSelector:
+        node-role.kubernetes.io/controlplane: "true"
+      tolerations:
+        - effect: NoExecute
+          operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+    kubeVersionOverrides:
+      - constraint: "< 1.22"
+        values:
+          metricsPort: 10252
+          clients:
+            https:
+              enabled: false
+              insecureSkipVerify: false
+              useServiceAccountCredentials: false
+
+  rkeScheduler:
+    enabled: false
+    component: kube-scheduler
+    metricsPort: 10259
+    clients:
+      port: 10012
+      useLocalhost: true
+      https:
+        enabled: true
+        insecureSkipVerify: true
+        useServiceAccountCredentials: true
+      nodeSelector:
+        node-role.kubernetes.io/controlplane: "true"
+      tolerations:
+        - effect: NoExecute
+          operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+    kubeVersionOverrides:
+      - constraint: "< 1.23"
+        values:
+          metricsPort: 10251
+          clients:
+            https:
+              enabled: false
+              insecureSkipVerify: false
+              useServiceAccountCredentials: false
+
+  rkeProxy:
+    enabled: false
+    component: kube-proxy
+    metricsPort: 10249
+    clients:
+      port: 10013
+      useLocalhost: true
+      tolerations:
+        - effect: NoExecute
+          operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+
+  rkeEtcd:
+    enabled: false
+    component: kube-etcd
+    metricsPort: 2379
+    clients:
+      port: 10014
+      https:
+        enabled: true
+        certDir: /etc/kubernetes/ssl
+        certFile: kube-etcd-*.pem
+        keyFile: kube-etcd-*-key.pem
+        caCertFile: kube-ca.pem
+        seLinuxOptions:
+          type: rke_kubereader_t
+      nodeSelector:
+        node-role.kubernetes.io/etcd: "true"
+      tolerations:
+        - effect: NoExecute
+          operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+
+  kubeAdmControllerManager:
+    enabled: false
+    component: kube-controller-manager
+    metricsPort: 10257
+    clients:
+      port: 10011
+      useLocalhost: true
+      https:
+        enabled: true
+        insecureSkipVerify: true
+        useServiceAccountCredentials: true
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+      tolerations:
+        - effect: NoExecute
+          operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+
+  kubeAdmScheduler:
+    enabled: false
+    component: kube-scheduler
+    metricsPort: 10259
+    clients:
+      port: 10012
+      useLocalhost: true
+      https:
+        enabled: true
+        insecureSkipVerify: true
+        useServiceAccountCredentials: true
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+      tolerations:
+        - effect: NoExecute
+          operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+
+  kubeAdmProxy:
+    enabled: false
+    component: kube-proxy
+    metricsPort: 10249
+    clients:
+      port: 10013
+      useLocalhost: true
+      tolerations:
+        - effect: NoExecute
+          operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+
+  kubeAdmEtcd:
+    enabled: false
+    component: kube-etcd
+    metricsPort: 2381
+    clients:
+      port: 10014
+      useLocalhost: true
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+      tolerations:
+        - effect: NoExecute
+          operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+
+  rke2ControllerManager:
+    enabled: false
+    component: kube-controller-manager
+    metricsPort: 10257
+    clients:
+      port: 10011
+      useLocalhost: true
+      https:
+        enabled: true
+        insecureSkipVerify: true
+        useServiceAccountCredentials: true
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: "true"
+      tolerations:
+        - effect: NoExecute
+          operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+    kubeVersionOverrides:
+      - constraint: "< 1.22"
+        values:
+          metricsPort: 10252
+          clients:
+            https:
+              enabled: false
+              insecureSkipVerify: false
+              useServiceAccountCredentials: false
+
+  rke2Scheduler:
+    enabled: false
+    component: kube-scheduler
+    metricsPort: 10259
+    clients:
+      port: 10012
+      useLocalhost: true
+      https:
+        enabled: true
+        insecureSkipVerify: true
+        useServiceAccountCredentials: true
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: "true"
+      tolerations:
+        - effect: NoExecute
+          operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+    kubeVersionOverrides:
+      - constraint: "< 1.22"
+        values:
+          metricsPort: 10251
+          clients:
+            https:
+              enabled: false
+              insecureSkipVerify: false
+              useServiceAccountCredentials: false
+
+  rke2Proxy:
+    enabled: false
+    component: kube-proxy
+    metricsPort: 10249
+    clients:
+      port: 10013
+      useLocalhost: true
+      tolerations:
+        - effect: NoExecute
+          operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+
+  rke2Etcd:
+    enabled: false
+    component: kube-etcd
+    metricsPort: 2381
+    clients:
+      port: 10014
+      useLocalhost: true
+      nodeSelector:
+        node-role.kubernetes.io/etcd: "true"
+      tolerations:
+        - effect: NoExecute
+          operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+
+  k3sServer:
+    enabled: false
+    component: k3s-server
+    metricsPort: 10250
+    clients:
+      port: 10013
+      useLocalhost: true
+      https:
+        enabled: true
+        insecureSkipVerify: true
+        useServiceAccountCredentials: true
+      rbac:
+        additionalRules:
+          - nonResourceURLs:
+              - /metrics/cadvisor
+            verbs:
+              - get
+          - apiGroups:
+              - ""
+            resources:
+              - nodes/metrics
+            verbs:
+              - get
+      tolerations:
+        - effect: NoExecute
+          operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+    serviceMonitor:
+      endpoints:
+        - port: metrics
+          honorLabels: true
+          relabelings:
+            - sourceLabels:
+                - __metrics_path__
+              targetLabel: metrics_path
+        - port: metrics
+          path: /metrics/cadvisor
+          honorLabels: true
+          relabelings:
+            - sourceLabels:
+                - __metrics_path__
+              targetLabel: metrics_path
+        - port: metrics
+          path: /metrics/probes
+          honorLabels: true
+          relabelings:
+            - sourceLabels:
+                - __metrics_path__
+              targetLabel: metrics_path
+
+  hardenedKubelet:
+    enabled: false
+    component: kubelet
+    metricsPort: 10250
+    clients:
+      port: 10015
+      useLocalhost: true
+      https:
+        enabled: true
+        insecureSkipVerify: true
+        useServiceAccountCredentials: true
+      rbac:
+        additionalRules:
+          - nonResourceURLs:
+              - /metrics/cadvisor
+            verbs:
+              - get
+          - apiGroups:
+              - ""
+            resources:
+              - nodes/metrics
+            verbs:
+              - get
+      tolerations:
+        - effect: NoExecute
+          operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+    serviceMonitor:
+      endpoints:
+        - port: metrics
+          honorLabels: true
+          relabelings:
+            - sourceLabels:
+                - __metrics_path__
+              targetLabel: metrics_path
+        - port: metrics
+          path: /metrics/cadvisor
+          honorLabels: true
+          relabelings:
+            - sourceLabels:
+                - __metrics_path__
+              targetLabel: metrics_path
+        - port: metrics
+          path: /metrics/probes
+          honorLabels: true
+          relabelings:
+            - sourceLabels:
+                - __metrics_path__
+              targetLabel: metrics_path
+
+  hardenedNodeExporter:
+    enabled: false
+    component: node-exporter
+    metricsPort: 9796
+    clients:
+      port: 10016
+      useLocalhost: true
+      tolerations:
+        - effect: NoExecute
+          operator: Exists
+        - effect: NoSchedule
+          operator: Exists
