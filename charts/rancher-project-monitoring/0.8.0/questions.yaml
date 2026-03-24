@@ -1,12 +1,12 @@
 questions:
 - variable: alertmanager.enabled
-  label: Enable Alertmanager
-  default: true
+  label: Enable Alertmanager Runtime
+  default: false
   type: boolean
   group: Alertmanager
 - variable: grafana.enabled
-  label: Enable Grafana
-  default: true
+  label: Enable Grafana Runtime
+  default: false
   type: boolean
   group: Grafana
   show_subquestion_if: true
@@ -27,6 +27,26 @@ questions:
     description: All ConfigMaps with this label are parsed as Grafana Dashboards
     type: string
     group: Grafana
+- variable: dashboardIntegration.grafanaURL
+  label: External Grafana URL
+  default: ""
+  type: string
+  group: Grafana
+- variable: prometheus.enabled
+  label: Enable Prometheus Runtime
+  default: false
+  type: boolean
+  group: Prometheus
+- variable: dashboardIntegration.prometheusURL
+  label: External Prometheus URL
+  default: ""
+  type: string
+  group: Prometheus
+- variable: dashboardIntegration.alertmanagerURL
+  label: External Alertmanager URL
+  default: ""
+  type: string
+  group: Alertmanager
 - variable: grafana.persistence.enabled
   type: boolean
   required: true
@@ -123,6 +143,6 @@ questions:
       label: Access Mode
 - variable: federate.enabled
   label: Enable Federated Metrics From Cluster Prometheus
-  default: true
+  default: false
   type: boolean
   group: Federation

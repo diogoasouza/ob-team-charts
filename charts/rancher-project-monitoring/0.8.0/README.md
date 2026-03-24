@@ -1,6 +1,6 @@
 # rancher-project-monitoring
 
-This chart installs a project-scoped version of [`rancher-monitoring`](https://rancher.com/docs/rancher/v2.6/en/monitoring-alerting), a Helm chart based off of [`kube-prometheus stack`](https://github.com/prometheus-operator/kube-prometheus). It deploys a collection of Kubernetes manifests, [Grafana](http://grafana.com/) dashboards, and [Prometheus rules](https://prometheus.io/docs/prometheus/latest/configuration/recording_rules/) combined with documentation and scripts to provide easy to operate end-to-end Kubernetes project monitoring with [Prometheus](https://prometheus.io/) using the [Prometheus Operator](https://github.com/prometheus-operator/prometheus-operator). See the [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus) README for details about components, dashboards, and alerts.
+This proof-of-concept chart keeps the `rancher-project-monitoring` release identity, but switches the Rancher-owned path to an external-URL-first model. By default it publishes Rancher dashboard artifacts, project RBAC metadata, and a `*-dashboard-values` ConfigMap for Rancher consumers without deploying Grafana, Prometheus, or Alertmanager runtimes.
 
 ## Prerequisites
 
@@ -13,7 +13,7 @@ This chart is not intended for standalone use; it's intended to be deployed via 
 
 ## Dependencies
 
-This chart is designed to be deployed alongside an existing Prometheus Operator deployment in a cluster that has already installed the Prometheus Operator CRDs. Specifically, the chart is configured and intended to be deployed alongside [`rancher-monitoring`](https://rancher.com/docs/rancher/v2.6/en/monitoring-alerting/), which deploys Prometheus Operator alongside a Cluster Prometheus that `rancher-project-monitoring` is configured to federate namespace-scoped metrics from by default.
+This chart is designed to be deployed alongside an existing Prometheus Operator deployment in a cluster that has already installed the Prometheus Operator CRDs. Specifically, it is intended to be deployed alongside [`rancher-monitoring`](https://rancher.com/docs/rancher/v2.6/en/monitoring-alerting/), which provides the cluster-scoped Prometheus Operator and, when you re-enable the project Prometheus runtime, can also provide the default federation target.
 
 ### Configuration
 
@@ -27,3 +27,33 @@ For more in-depth documentation of configuration options meanings, please see
 - [Prometheus Operator](https://github.com/prometheus-operator/prometheus-operator)
 - [Prometheus](https://prometheus.io/docs/introduction/overview/)
 - [Grafana](https://github.com/grafana/helm-charts/tree/main/charts/grafana#grafana-helm-chart)
+
+## What this PoC does
+
+- Publishes project dashboard metadata through the existing `dashboard-values` ConfigMap contract
+- Preserves project-scoped dashboard inventory and RBAC aggregation roles Rancher expects
+- Renders dashboard ConfigMaps even when the Grafana subchart is disabled
+- Leaves project Grafana, Prometheus, and Alertmanager disabled by default
+
+## What this PoC does not do
+
+- It does not make `prometheus-federator` consume an external chart source by itself
+- It does not provision or validate an external Grafana, Prometheus, or Alertmanager for you
+- It does not remove the need for Rancher Dashboard / Manager follow-up where UI assumptions still exist
+
+## External integration metadata
+
+Set these values to publish externally managed endpoints for Rancher consumers:
+
+```yaml
+dashboardIntegration:
+  grafanaURL: https://grafana.example.com
+  prometheusURL: https://prometheus.example.com
+  alertmanagerURL: https://alertmanager.example.com
+```
+
+If a runtime component is re-enabled and the corresponding `dashboardIntegration` value is left empty, the chart falls back to the legacy in-cluster URL behavior for that component.
+
+## Dependencies
+
+This chart is still intended to be deployed via [Prometheus Federator](https://github.com/rancher/prometheus-federator). In this repository, the chart-side PoC is ready first; the operator still needs complementary work to stop assuming the legacy embedded runtime path by default.

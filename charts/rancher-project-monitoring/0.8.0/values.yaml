@@ -35,7 +35,7 @@ commonLabels: {}
 ## Create default rules for monitoring the cluster
 ##
 defaultRules:
-  create: true
+  create: false
   rules:
     general: true
     prometheus: true
@@ -133,10 +133,18 @@ global:
   # or
   # - "image-pull-secret"
 
+dashboardIntegration:
+  # External endpoint metadata published for Rancher consumers through the
+  # dashboard-values ConfigMap. Leave these empty to preserve legacy in-cluster
+  # URLs when the corresponding runtime component is enabled.
+  grafanaURL: ""
+  prometheusURL: ""
+  alertmanagerURL: ""
+
 federate:
   ## enabled indicates whether to add federation to any Project Prometheus Stacks by default
   ## If not enabled, no federation will be turned on
-  enabled: true
+  enabled: false
 
   # Change this to point at all Prometheuses you want all your Project Prometheus Stacks to federate from
   # By default, this matches the default deployment of Rancher Monitoring
@@ -153,7 +161,7 @@ alertmanager:
 
   ## Deploy alertmanager
   ##
-  enabled: true
+  enabled: false
 
   ## Annotations for Alertmanager
   ##
@@ -672,7 +680,7 @@ alertmanager:
 ## Using default values from https://github.com/grafana/helm-charts/blob/main/charts/grafana/values.yaml
 ##
 grafana:
-  enabled: true
+  enabled: false
   namespaceOverride: ""
 
   ## Grafana's primary configuration
@@ -703,7 +711,7 @@ grafana:
 
   ## ForceDeployDashboard Create dashboard configmap even if grafana deployment has been disabled
   ##
-  forceDeployDashboards: false
+  forceDeployDashboards: true
 
   ## Deploy default dashboards
   ##
@@ -941,7 +949,7 @@ grafana:
 ##
 prometheus:
 
-  enabled: true
+  enabled: false
 
   ## Annotations for Prometheus
   ##
