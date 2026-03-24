@@ -14,7 +14,7 @@ This chart keeps the `rancher-monitoring` release identity, but renders only das
 
 - It does not deploy Grafana, Prometheus, Alertmanager, exporters, or PushProx
 - It does not wire datasources into an external Grafana instance for you
-- It does not update Rancher Dashboard UI logic that still assumes an in-cluster Grafana service proxy for cluster monitoring
+- It does not, by itself, update Rancher Dashboard UI logic. The current prototype depends on matching Dashboard-side changes so cluster monitoring can consume the chart-published metadata.
 
 ## Values
 
@@ -71,11 +71,20 @@ The current artifact inventory contains 26 dashboard JSON files:
 
 ## Operational notes
 
-- `dashboardIntegration.grafanaURL` should point at the external Grafana base URL Rancher will eventually use for cluster dashboards.
+- `dashboardIntegration.grafanaURL` should point at the Grafana URL Rancher Dashboard itself will load for cluster dashboards.
+- For Rancher-embedded dashboards, prefer the same Rancher/Kubernetes service-proxy shape used by project monitoring, for example:
+  - `/api/v1/namespaces/monitoring/services/http:ext-monitoring-grafana:80/proxy/`
+- The proxy URL alone is not enough. Project monitoring works because Grafana is fronted by an nginx sidecar that rewrites Grafana's `appSubUrl` for the Rancher proxy path. A raw Grafana service configured only with `root_url` / `serve_from_sub_path` can loop on `301` redirects for HTML and asset routes.
+- A direct external Grafana URL may still work, but then iframe embedding, cookies, and auth must all work cross-origin.
 - `dashboardIntegration.prometheusURL` is optional and is included for future consumers that need a Prometheus endpoint hint.
+- The current Dashboard prototype branch reads this chart's `rancher-monitoring-dashboard-values` ConfigMap directly for cluster monitoring. That means the chart's published metadata, not `catalog.cattle.io.App.status.dashboardValues`, is the effective integration contract for this proof of concept.
 - Backup/restore and logging dashboards are delivered as artifacts only. They require external datasource wiring and metric collection to become functional.
 - PushProx replacement and equivalent external collection paths are intentionally deferred in this prototype.
+- Grafana must be configured to allow embedding and to avoid redirecting embedded requests to an iframe-blocked login page. For local prototype testing, this usually means:
+  - `allow_embedding = true`
+  - anonymous or equivalent pre-authenticated viewer access for the proxied dashboard requests
+  - avoiding an embedded `/login` flow that returns `X-Frame-Options: deny`
 
 ## Rancher Dashboard follow-up
 
-This chart-side contract is prepared for Rancher Dashboard changes, but cluster-level Rancher UI currently still hardcodes in-cluster Grafana proxy URLs and endpoint checks. A follow-up Rancher Dashboard change is still required to consume `status.dashboardValues.grafanaURL`-style metadata for cluster monitoring, similar to project monitoring.
+This chart-side contract is usable today with the matching Dashboard prototype branch, which reads the release-scoped dashboard-values ConfigMap directly for cluster monitoring. Upstream Rancher Dashboard still needs an equivalent productized integration path so cluster monitoring can consume this metadata without relying on app-status internals or hardcoded in-cluster service assumptions.
