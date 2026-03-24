@@ -1,12 +1,10 @@
 {{ $.Chart.Name }} has been installed.
 
-This proof-of-concept leaves the Rancher-owned project Grafana, Prometheus, and Alertmanager runtimes disabled by default.
+This proof-of-concept now ships only dashboard artifacts, dashboard-values metadata, and project RBAC roles.
 
 Publish external endpoints for Rancher consumers by setting:
   dashboardIntegration.grafanaURL
   dashboardIntegration.prometheusURL
   dashboardIntegration.alertmanagerURL
-
-If you re-enable a runtime component and leave its dashboardIntegration URL empty, the chart falls back to the legacy in-cluster service URL for that component.
 
 Prometheus Federator still needs complementary operator changes before this can become the default end-to-end project monitoring path.
