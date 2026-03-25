@@ -10,7 +10,7 @@ This prototype uses two repo-root scripts:
 "Dashboard-only" means the Rancher chart ships only dashboard artifacts and integration metadata; Grafana and Prometheus are installed separately from upstream rather than being shipped by Rancher.
 
 - Cluster monitoring is tested in dashboard-only mode: `rancher-monitoring` ships only dashboard artifacts; an upstream kube-prometheus-stack (`ext-monitoring`) provides the Grafana and Prometheus runtime.
-- Project monitoring has been preliminarily tested via `install-prom.sh`. The project monitor runs Grafana and Prometheus from upstream public registries (not Rancher-shipped images), which aligns with the dashboard-only direction. However, `rancher-project-monitoring` still renders the full runtime stack — converting it to a dashboard-artifacts-only chart is the next step.
+- Project monitoring has been preliminarily tested via `install-prom.sh`. The project monitor runs Grafana and Prometheus from upstream public registries rather than Rancher-shipped images, which aligns with the dashboard-only direction.
 
 ## Required local setup
 
