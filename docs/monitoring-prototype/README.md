@@ -32,6 +32,12 @@ export DASHBOARD_BRANCH="configurable-monitoring-urls"
 export RANCHER_BOOTSTRAP_PASSWORD="adminadmin"
 export RANCHER_REPLICAS="1"
 
+# Dashboard build vars (used when building for a static Python server on a different host)
+# RESOURCE_BASE is the full URL where the built dashboard assets are served from.
+# ROUTER_BASE is the path prefix the Vue router uses (e.g. /dashboard/).
+export RESOURCE_BASE="https://${DASHBOARD_HOST}/"
+export ROUTER_BASE="/dashboard/"
+
 export RANCHER_CLUSTER_ID="local"
 export PROMETHEUS_FEDERATOR_DIR="/path/to/prometheus-federator"
 export PROMETHEUS_FEDERATOR_IMAGE_REPO="local"
@@ -59,7 +65,9 @@ From `ob-team-charts`:
 ./install-prom.sh
 ```
 
-`install.sh` will pause after Rancher comes up and ask you to start the local Dashboard dev server. It expects:
+`install.sh` will pause after Rancher comes up and ask you to start the Dashboard.
+
+**Option A – dev server (same host, simple):**
 
 ```bash
 cd "$DASHBOARD_DIR"
@@ -67,6 +75,45 @@ git checkout "$DASHBOARD_BRANCH"
 yarn install
 API="https://$RANCHER_HOST" yarn dev
 ```
+
+**Option B – static build served by Python (different hosts/URLs):**
+
+Use this when the dashboard is accessed via a different URL than where `yarn dev` listens, e.g. via an ngrok tunnel or a reverse proxy. The extra env vars tell the build where assets are hosted and what router base path to use.
+
+```bash
+cd "$DASHBOARD_DIR"
+git checkout "$DASHBOARD_BRANCH"
+yarn install
+API="https://$RANCHER_HOST" \
+  RESOURCE_BASE="https://$DASHBOARD_HOST/" \
+  ROUTER_BASE="/dashboard/" \
+  yarn build
+
+# Serve dist/ with CORS headers (needed for cross-origin dashboard assets)
+python3 - <<'PYEOF'
+import functools, http.server, os, socketserver
+
+PORT = int(os.environ.get("PORT", "8006"))
+DIRECTORY = os.environ.get("DIRECTORY", "dist")
+
+class CORSRequestHandler(http.server.SimpleHTTPRequestHandler):
+    def end_headers(self):
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "*")
+        super().end_headers()
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.end_headers()
+
+handler = functools.partial(CORSRequestHandler, directory=DIRECTORY)
+with socketserver.TCPServer(("0.0.0.0", PORT), handler) as httpd:
+    print(f"Serving {DIRECTORY} on http://0.0.0.0:{PORT}")
+    httpd.serve_forever()
+PYEOF
+```
+
+> **Note:** `RESOURCE_BASE` and `ROUTER_BASE` must match whatever URL and path Rancher resolves when it loads `ui-dashboard-index`.  The values in your `.envrc` are passed through automatically if you run `install.sh` under `direnv`.
 
 ## What gets installed
 

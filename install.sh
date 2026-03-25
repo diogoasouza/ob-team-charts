@@ -80,14 +80,26 @@ cat <<EOF
 Rancher should now be reachable at:
   https://${RANCHER_HOST}
 
-Before continuing, do this in another terminal:
+Before continuing, start the Dashboard in another terminal.
+
+Option A — dev server (same host, simple):
   cd "${DASHBOARD_DIR}"
   git checkout "${DASHBOARD_BRANCH}"
   yarn install
   API=https://${RANCHER_HOST} yarn dev
 
+Option B — static build served by Python (different hosts/URLs, e.g. ngrok):
+  cd "${DASHBOARD_DIR}"
+  git checkout "${DASHBOARD_BRANCH}"
+  yarn install
+  API=https://${RANCHER_HOST} \\
+    RESOURCE_BASE=https://${DASHBOARD_HOST}/ \\
+    ROUTER_BASE=/dashboard/ \\
+    yarn build
+  # Then serve dist/ with the Python CORS server — see docs/monitoring-prototype/README.md
+
 Then open https://${DASHBOARD_HOST} once in your browser and accept the certificate warning.
-Press Enter here when the local Dashboard dev server is running.
+Press Enter here when the Dashboard is running and accessible.
 
 EOF
 read -r
