@@ -112,13 +112,24 @@ kubectl patch settings.management.cattle.io ui-offline-preferred \
   --type merge \
   -p '{"value":"false"}'
 
-kubectl create namespace monitoring >/dev/null 2>&1 || true
+kubectl create namespace cattle-monitoring-system >/dev/null 2>&1 || true
+
+# NOTE: Ideally kube-prometheus-stack would be installed into its own namespace (e.g. "monitoring")
+# with a stub ExternalName Service in cattle-monitoring-system pointing at it. However, the
+# Kubernetes API server proxy does not support ExternalName services — it requires selector-managed
+# endpoints. Until a clean cross-namespace solution is found, the workaround is to install the
+# external stack directly into cattle-monitoring-system so the rancher-monitoring-grafana Service
+# can use a pod selector and get real endpoints. This is tracked for follow-up investigation.
+
+# nginx sidecar on port 8181 rewrites the Rancher proxy sub-path into appSubUrl so
+# that Grafana's browser client loads assets via the correct proxy prefix.
+# Port 8181 (not 8080) avoids a conflict observed with the 8080 binding in the pod.
 kubectl apply -f - <<'EOF'
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: grafana-nginx-proxy-config
-  namespace: monitoring
+  namespace: cattle-monitoring-system
 data:
   nginx.conf: |-
     worker_processes      auto;
@@ -145,8 +156,8 @@ data:
       }
 
       server {
-        listen          8080;
-        listen     [::]:8080;
+        listen          8181;
+        listen     [::]:8181;
         access_log      off;
 
         gzip            on;
@@ -216,7 +227,18 @@ grafana:
       allow_embedding: true
   service:
     portName: nginx-http
-    targetPort: 8080
+    targetPort: 8181
+  # The named port "grafana" on the main container is 8181 (nginx) so the chart's
+  # default probes would hit nginx, which 502s while Grafana is still starting up.
+  # Override probes to check Grafana's own port directly.
+  readinessProbe:
+    httpGet:
+      path: /api/health
+      port: 3000
+  livenessProbe:
+    httpGet:
+      path: /api/health
+      port: 3000
   extraContainers: |
     - name: grafana-proxy
       args:
@@ -227,7 +249,7 @@ grafana:
       - /nginx/nginx.conf
       image: rancher/mirrored-library-nginx:1.29.1-alpine
       ports:
-      - containerPort: 8080
+      - containerPort: 8181
         name: nginx-http
         protocol: TCP
       volumeMounts:
@@ -262,23 +284,24 @@ grafana:
 EOF
 
 helm upgrade --install ext-monitoring prometheus-community/kube-prometheus-stack \
-  -n monitoring \
+  -n cattle-monitoring-system \
+  --create-namespace \
   -f /tmp/ext-monitoring-values.yaml
 
-kubectl -n monitoring rollout status deploy/ext-monitoring-grafana
+kubectl -n cattle-monitoring-system rollout status deploy/ext-monitoring-grafana
 
-GRAFANA_CLUSTER_IP=$(kubectl get svc -n monitoring ext-monitoring-grafana -o jsonpath='{.spec.clusterIP}')
-
-cat > /tmp/rancher-monitoring-dashboard-only-values.yaml <<EOF
+cat > /tmp/rancher-monitoring-dashboard-only-values.yaml <<'EOF'
 dashboardIntegration:
+  grafanaURL: /api/v1/namespaces/cattle-monitoring-system/services/http:rancher-monitoring-grafana:80/proxy/
   grafana:
-    host: "${GRAFANA_CLUSTER_IP}"
-    port: 80
+    selector:
+      app.kubernetes.io/name: grafana
+    port: 8181
   prometheus:
-    host: ""
+    selector: {}
     port: 9090
   alertmanager:
-    host: ""
+    selector: {}
     port: 9093
 
 dashboardArtifacts:

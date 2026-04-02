@@ -7,12 +7,11 @@ Cluster-level integration metadata is published in:
   {{ include "rancher-monitoring.fullname" . }}-dashboard-values
   namespace: {{ include "rancher-monitoring.namespace" . }}
 
-Set `dashboardIntegration.grafanaURL` to your external Grafana base URL.
+Set `dashboardIntegration.grafanaURL` to the Rancher proxy path for Grafana.
 Optionally set `dashboardIntegration.prometheusURL` for consumers that need a Prometheus endpoint hint.
 Optionally set `dashboardIntegration.alertmanagerURL` for consumers that need an Alertmanager endpoint hint.
 
-For Rancher UI links and embedded dashboards to work, set the IP address of each
-external service so that proxy Services and Endpoints are created in-cluster:
-  dashboardIntegration.grafana.host      - IP address of external Grafana
-  dashboardIntegration.prometheus.host   - IP address of external Prometheus
-  dashboardIntegration.alertmanager.host - IP address of external Alertmanager
+To create a `rancher-monitoring-grafana` proxy Service in this namespace, set a pod selector and
+target port so the Service has real selector-managed endpoints (required for the Rancher API proxy):
+  dashboardIntegration.grafana.selector  - pod label selector (e.g. app.kubernetes.io/name: grafana)
+  dashboardIntegration.grafana.port      - target port on the matched pods (default: 8181)

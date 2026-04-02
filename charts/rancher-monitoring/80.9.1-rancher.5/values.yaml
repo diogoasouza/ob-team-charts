@@ -36,15 +36,15 @@ dashboardArtifacts:
 dashboardIntegration:
   grafanaURL: ""
   grafana:
-    host: ""   # IP address of external Grafana
-    port: 80
+    selector: {}  # Pod label selector — creates a ClusterIP service targeting matching pods in this namespace
+    port: 8181
   prometheusURL: ""
   prometheus:
-    host: ""   # IP address of external Prometheus
+    selector: {}
     port: 9090
   alertmanagerURL: ""
   alertmanager:
-    host: ""   # IP address of external Alertmanager
+    selector: {}
     port: 9093
 
 # Compatibility knobs retained for dashboard query compatibility and gradual migration.

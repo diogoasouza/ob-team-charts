@@ -30,7 +30,7 @@ export DASHBOARD_HOST="your-dashboard-host.example.com"
 # Optional overrides
 export DASHBOARD_DIR="/path/to/dashboard"
 export CLUSTER_NAME="rancher-monitoring-dev"
-export DASHBOARD_BRANCH="configurable-monitoring-urls"
+export DASHBOARD_BRANCH="poc/minimal-monitoring-detection"
 export RANCHER_BOOTSTRAP_PASSWORD="adminadmin"
 export RANCHER_REPLICAS="1"
 
@@ -49,7 +49,7 @@ export PROJECT_MONITORING_VERSION="0.6.6"
 
 # The cluster Prometheus that project Prometheuses federate from.
 # Defaults to the 'ext-monitoring' release installed by install.sh.
-export FEDERATE_PROMETHEUS_URL="ext-monitoring-kube-promet-prometheus.monitoring.svc:9090"
+export FEDERATE_PROMETHEUS_URL="ext-monitoring-kube-promet-prometheus.cattle-monitoring-system.svc:9090"
 ```
 
 Then run:
@@ -122,7 +122,7 @@ PYEOF
 After `./install.sh`:
 
 - Rancher in `cattle-system`
-- external monitoring stack in `monitoring`
+- external monitoring stack (`ext-monitoring`) in `cattle-monitoring-system`
 - dashboard-only `rancher-monitoring` in `cattle-monitoring-system`
 
 After `./install-prom.sh`:
@@ -176,7 +176,7 @@ If you want to point the prototype at a different approved project chart source,
 
 If you want project Prometheuses to federate from a different upstream Prometheus (e.g. a different release name or namespace), change:
 
-- `FEDERATE_PROMETHEUS_URL` — defaults to `ext-monitoring-kube-promet-prometheus.monitoring.svc:9090`, matching the `ext-monitoring` release deployed by `install.sh`
+- `FEDERATE_PROMETHEUS_URL` — defaults to `ext-monitoring-kube-promet-prometheus.cattle-monitoring-system.svc:9090`, matching the `ext-monitoring` release deployed by `install.sh`
 
 If you want to rebuild the federator image under a different name/tag, change:
 

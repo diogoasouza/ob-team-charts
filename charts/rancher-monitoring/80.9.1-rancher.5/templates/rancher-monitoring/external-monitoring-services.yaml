@@ -1,93 +1,37 @@
-{{- if .Values.dashboardIntegration.grafana.host }}
+{{- define "rancher-monitoring.externalService" -}}
+{{- $svcName := index . 0 -}}
+{{- $svcPort := index . 1 -}}
+{{- $cfg := index . 2 -}}
+{{- $labels := index . 3 -}}
+{{- $namespace := index . 4 -}}
+{{- if $cfg.selector }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: rancher-monitoring-grafana
-  namespace: {{ include "rancher-monitoring.namespace" . }}
+  name: {{ $svcName }}
+  namespace: {{ $namespace }}
   labels:
-{{ include "rancher-monitoring.labels" . | indent 4 }}
+{{ $labels | indent 4 }}
 spec:
   type: ClusterIP
+  selector:
+{{ $cfg.selector | toYaml | indent 4 }}
   ports:
-    - port: 80
-      targetPort: {{ .Values.dashboardIntegration.grafana.port }}
+    - port: {{ $svcPort }}
+      targetPort: {{ $cfg.port }}
       protocol: TCP
       name: http
----
-apiVersion: v1
-kind: Endpoints
-metadata:
-  name: rancher-monitoring-grafana
-  namespace: {{ include "rancher-monitoring.namespace" . }}
-  labels:
-{{ include "rancher-monitoring.labels" . | indent 4 }}
-subsets:
-  - addresses:
-      - ip: {{ .Values.dashboardIntegration.grafana.host | quote }}
-    ports:
-      - port: {{ .Values.dashboardIntegration.grafana.port }}
-        protocol: TCP
 {{- end }}
-{{- if .Values.dashboardIntegration.prometheus.host }}
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: rancher-monitoring-prometheus
-  namespace: {{ include "rancher-monitoring.namespace" . }}
-  labels:
-{{ include "rancher-monitoring.labels" . | indent 4 }}
-spec:
-  type: ClusterIP
-  ports:
-    - port: 9090
-      targetPort: {{ .Values.dashboardIntegration.prometheus.port }}
-      protocol: TCP
-      name: http
----
-apiVersion: v1
-kind: Endpoints
-metadata:
-  name: rancher-monitoring-prometheus
-  namespace: {{ include "rancher-monitoring.namespace" . }}
-  labels:
-{{ include "rancher-monitoring.labels" . | indent 4 }}
-subsets:
-  - addresses:
-      - ip: {{ .Values.dashboardIntegration.prometheus.host | quote }}
-    ports:
-      - port: {{ .Values.dashboardIntegration.prometheus.port }}
-        protocol: TCP
-{{- end }}
-{{- if .Values.dashboardIntegration.alertmanager.host }}
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: rancher-monitoring-alertmanager
-  namespace: {{ include "rancher-monitoring.namespace" . }}
-  labels:
-{{ include "rancher-monitoring.labels" . | indent 4 }}
-spec:
-  type: ClusterIP
-  ports:
-    - port: 9093
-      targetPort: {{ .Values.dashboardIntegration.alertmanager.port }}
-      protocol: TCP
-      name: http
----
-apiVersion: v1
-kind: Endpoints
-metadata:
-  name: rancher-monitoring-alertmanager
-  namespace: {{ include "rancher-monitoring.namespace" . }}
-  labels:
-{{ include "rancher-monitoring.labels" . | indent 4 }}
-subsets:
-  - addresses:
-      - ip: {{ .Values.dashboardIntegration.alertmanager.host | quote }}
-    ports:
-      - port: {{ .Values.dashboardIntegration.alertmanager.port }}
-        protocol: TCP
-{{- end }}
+{{- end -}}
+
+{{- $ns := include "rancher-monitoring.namespace" . }}
+{{- $labels := include "rancher-monitoring.labels" . }}
+{{- $grafana := .Values.dashboardIntegration.grafana }}
+{{- $prometheus := .Values.dashboardIntegration.prometheus }}
+{{- $alertmanager := .Values.dashboardIntegration.alertmanager }}
+
+{{- include "rancher-monitoring.externalService" (list "rancher-monitoring-grafana" 80 $grafana $labels $ns) | nindent 0 }}
+{{- include "rancher-monitoring.externalService" (list "rancher-monitoring-prometheus" 9090 $prometheus $labels $ns) | nindent 0 }}
+{{- include "rancher-monitoring.externalService" (list "rancher-monitoring-alertmanager" 9093 $alertmanager $labels $ns) | nindent 0 }}
+
