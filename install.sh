@@ -8,7 +8,7 @@ export CHARTS_DIR="${CHARTS_DIR:-${SCRIPT_DIR}}"
 export CLUSTER_NAME="${CLUSTER_NAME:-rancher-monitoring-dev}"
 export RANCHER_BOOTSTRAP_PASSWORD="${RANCHER_BOOTSTRAP_PASSWORD:-adminadmin}"
 export RANCHER_REPLICAS="${RANCHER_REPLICAS:-1}"
-export DASHBOARD_BRANCH="${DASHBOARD_BRANCH:-configurable-monitoring-urls}"
+export DASHBOARD_BRANCH="${DASHBOARD_BRANCH:-poc/minimal-monitoring-detection}"
 
 if [[ -z "${DASHBOARD_DIR:-}" ]]; then
   if sibling_dashboard_dir="$(realpath "${SCRIPT_DIR}/../dashboard" 2>/dev/null)"; then
@@ -189,11 +189,11 @@ data:
           proxy_pass     http://localhost:3000/;
 
           sub_filter_once off;
-          sub_filter '"appSubUrl":""' '"appSubUrl":"/api/v1/namespaces/monitoring/services/http:ext-monitoring-grafana:80/proxy"';
+          sub_filter '"appSubUrl":""' '"appSubUrl":"/api/v1/namespaces/cattle-monitoring-system/services/http:rancher-monitoring-grafana:80/proxy"';
           sub_filter ':"/avatar/' ':"avatar/';
 
-          rewrite ^/api/v1/namespaces/monitoring/services/http:ext-monitoring-grafana:80/proxy(.*)$ /$1 break;
-          rewrite ^/k8s/clusters/.*/api/v1/namespaces/monitoring/services/http:ext-monitoring-grafana:80/proxy(.*)$ /$1 break;
+          rewrite ^/api/v1/namespaces/cattle-monitoring-system/services/http:rancher-monitoring-grafana:80/proxy(.*)$ /$1 break;
+          rewrite ^/k8s/clusters/.*/api/v1/namespaces/cattle-monitoring-system/services/http:rancher-monitoring-grafana:80/proxy(.*)$ /$1 break;
 
           if ($request_filename ~ .*\.(?:js|css|jpg|jpeg|gif|png|ico|cur|gz|svg|svgz|mp4|ogg|ogv|webm)$) {
             expires             90d;
@@ -265,10 +265,21 @@ helm upgrade --install ext-monitoring prometheus-community/kube-prometheus-stack
   -n monitoring \
   -f /tmp/ext-monitoring-values.yaml
 
-cat > /tmp/rancher-monitoring-dashboard-only-values.yaml <<'EOF'
+kubectl -n monitoring rollout status deploy/ext-monitoring-grafana
+
+GRAFANA_CLUSTER_IP=$(kubectl get svc -n monitoring ext-monitoring-grafana -o jsonpath='{.spec.clusterIP}')
+
+cat > /tmp/rancher-monitoring-dashboard-only-values.yaml <<EOF
 dashboardIntegration:
-  grafanaURL: /api/v1/namespaces/monitoring/services/http:ext-monitoring-grafana:80/proxy/
-  prometheusURL: ""
+  grafana:
+    host: "${GRAFANA_CLUSTER_IP}"
+    port: 80
+  prometheus:
+    host: ""
+    port: 9090
+  alertmanager:
+    host: ""
+    port: 9093
 
 dashboardArtifacts:
   namespace: cattle-dashboards
