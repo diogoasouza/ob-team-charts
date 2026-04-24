@@ -132,12 +132,6 @@ grafana:
       org_role: Viewer
     security:
       allow_embedding: true
-  sidecar:
-    dashboards:
-      enabled: true
-      searchNamespace: ALL
-      label: grafana_dashboard
-      labelValue: "1"
 EOF
 
 helm upgrade --install ext-monitoring prometheus-community/kube-prometheus-stack \

@@ -5,7 +5,6 @@ annotations:
       url: https://github.com/rancher/ob-team-charts
     - name: Prototype README
       url: https://github.com/rancher/ob-team-charts/tree/main/charts/rancher-monitoring/80.9.1-rancher.6
-  catalog.cattle.io/auto-install: rancher-monitoring-crd=match
   catalog.cattle.io/certified: rancher
   catalog.cattle.io/display-name: Monitoring
   catalog.cattle.io/kube-version: '>= 1.26.0-0'

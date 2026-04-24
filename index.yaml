@@ -1624,7 +1624,6 @@ entries:
           url: https://github.com/rancher/ob-team-charts
         - name: Prototype README
           url: https://github.com/rancher/ob-team-charts/tree/main/charts/rancher-monitoring/80.9.1-rancher.6
-      catalog.cattle.io/auto-install: rancher-monitoring-crd=match
       catalog.cattle.io/certified: rancher
       catalog.cattle.io/display-name: Monitoring
       catalog.cattle.io/kube-version: '>= 1.26.0-0'
@@ -1635,10 +1634,10 @@ entries:
       catalog.cattle.io/ui-component: monitoring
     apiVersion: v2
     appVersion: dashboard-artifacts
-    created: "2026-04-23T21:02:49.810065-03:00"
+    created: "2026-04-23T21:13:57.67137-03:00"
     description: Dashboard artifact delivery for Rancher Monitoring with BYO Grafana
       integration metadata and optional nginx proxy.
-    digest: 351710ad72b74f3ad3f303c4b7527f91ec6109d1a61ebe9c87b72ccf2737d7e9
+    digest: c9365250e5ee451506e02d9938d1de2038d29d0444abe88e9a164eb28f55e9b9
     home: https://github.com/rancher/ob-team-charts
     icon: file://assets/logos/rancher-monitoring.png
     keywords:
