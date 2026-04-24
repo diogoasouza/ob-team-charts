@@ -121,99 +121,6 @@ kubectl create namespace cattle-monitoring-system >/dev/null 2>&1 || true
 # external stack directly into cattle-monitoring-system so the rancher-monitoring-grafana Service
 # can use a pod selector and get real endpoints. This is tracked for follow-up investigation.
 
-# nginx sidecar on port 8181 rewrites the Rancher proxy sub-path into appSubUrl so
-# that Grafana's browser client loads assets via the correct proxy prefix.
-# Port 8181 (not 8080) avoids a conflict observed with the 8080 binding in the pod.
-kubectl apply -f - <<'EOF'
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: grafana-nginx-proxy-config
-  namespace: cattle-monitoring-system
-data:
-  nginx.conf: |-
-    worker_processes      auto;
-    error_log             /dev/stdout warn;
-    pid                   /var/cache/nginx/nginx.pid;
-
-    events {
-       worker_connections 1024;
-    }
-
-    http {
-      include       /etc/nginx/mime.types;
-      log_format    main '[$time_local - $status] $remote_addr - $remote_user $request ($http_referer)';
-
-      proxy_connect_timeout       10;
-      proxy_read_timeout          180;
-      proxy_send_timeout          5;
-      proxy_buffering             off;
-      proxy_cache_path            /var/cache/nginx/cache levels=1:2 keys_zone=my_zone:100m inactive=1d max_size=10g;
-
-      map $http_upgrade $connection_upgrade {
-        default upgrade;
-        '' close;
-      }
-
-      server {
-        listen          8181;
-        listen     [::]:8181;
-        access_log      off;
-
-        gzip            on;
-        gzip_min_length 1k;
-        gzip_comp_level 2;
-        gzip_types      text/plain application/javascript application/x-javascript text/css application/xml text/javascript image/jpeg image/gif image/png;
-        gzip_vary       on;
-        gzip_disable    "MSIE [1-6]\.";
-
-        proxy_set_header Host $host;
-
-        location /api/dashboards {
-          proxy_pass     http://localhost:3000;
-        }
-
-        location /api/search {
-          proxy_pass     http://localhost:3000;
-
-          sub_filter_types application/json;
-          sub_filter_once off;
-        }
-
-        location /api/live/ {
-          proxy_http_version 1.1;
-          proxy_set_header Upgrade $http_upgrade;
-          proxy_set_header Connection $connection_upgrade;
-          proxy_set_header Host $http_host;
-          proxy_pass http://localhost:3000;
-        }
-
-        location / {
-          proxy_cache         my_zone;
-          proxy_cache_valid   200 302 1d;
-          proxy_cache_valid   301 30d;
-          proxy_cache_valid   any 5m;
-          proxy_cache_bypass  $http_cache_control;
-          add_header          X-Proxy-Cache $upstream_cache_status;
-          add_header          Cache-Control "public";
-
-          proxy_pass     http://localhost:3000/;
-
-          sub_filter_once off;
-          sub_filter '"appSubUrl":""' '"appSubUrl":"/api/v1/namespaces/cattle-monitoring-system/services/http:rancher-monitoring-grafana:80/proxy"';
-          sub_filter ':"/avatar/' ':"avatar/';
-
-          rewrite ^/api/v1/namespaces/cattle-monitoring-system/services/http:rancher-monitoring-grafana:80/proxy(.*)$ /$1 break;
-          rewrite ^/k8s/clusters/.*/api/v1/namespaces/cattle-monitoring-system/services/http:rancher-monitoring-grafana:80/proxy(.*)$ /$1 break;
-
-          if ($request_filename ~ .*\.(?:js|css|jpg|jpeg|gif|png|ico|cur|gz|svg|svgz|mp4|ogg|ogv|webm)$) {
-            expires             90d;
-          }
-        }
-      }
-    }
-EOF
-
 cat > /tmp/ext-monitoring-values.yaml <<'EOF'
 grafana:
   adminPassword: admin
@@ -225,56 +132,6 @@ grafana:
       org_role: Viewer
     security:
       allow_embedding: true
-  service:
-    portName: nginx-http
-    targetPort: 8181
-  # The named port "grafana" on the main container is 8181 (nginx) so the chart's
-  # default probes would hit nginx, which 502s while Grafana is still starting up.
-  # Override probes to check Grafana's own port directly.
-  readinessProbe:
-    httpGet:
-      path: /api/health
-      port: 3000
-  livenessProbe:
-    httpGet:
-      path: /api/health
-      port: 3000
-  extraContainers: |
-    - name: grafana-proxy
-      args:
-      - nginx
-      - -g
-      - daemon off;
-      - -c
-      - /nginx/nginx.conf
-      image: rancher/mirrored-library-nginx:1.29.1-alpine
-      ports:
-      - containerPort: 8181
-        name: nginx-http
-        protocol: TCP
-      volumeMounts:
-      - mountPath: /nginx
-        name: grafana-nginx
-      - mountPath: /var/cache/nginx
-        name: nginx-home
-      securityContext:
-        runAsUser: 101
-        runAsGroup: 101
-        allowPrivilegeEscalation: false
-        readOnlyRootFilesystem: true
-        capabilities:
-          drop:
-          - ALL
-  extraContainerVolumes:
-  - name: nginx-home
-    emptyDir: {}
-  - name: grafana-nginx
-    configMap:
-      name: grafana-nginx-proxy-config
-      items:
-      - key: nginx.conf
-        mode: 438
-        path: nginx.conf
   sidecar:
     dashboards:
       enabled: true
@@ -294,9 +151,8 @@ cat > /tmp/rancher-monitoring-dashboard-only-values.yaml <<'EOF'
 dashboardIntegration:
   grafanaURL: /api/v1/namespaces/cattle-monitoring-system/services/http:rancher-monitoring-grafana:80/proxy/
   grafana:
-    selector:
-      app.kubernetes.io/name: grafana
-    port: 8181
+    selector: {}  # Not used when grafanaProxy.enabled=true
+    port: 8181    # Not used when grafanaProxy.enabled=true
   prometheus:
     selector: {}
     port: 9090
@@ -315,10 +171,17 @@ dashboardArtifacts:
       fluentd: false
       fluentbit: false
     backupRestore: false
+
+# Enable the nginx proxy deployment that handles Rancher's Kubernetes API proxy URL rewriting
+grafanaProxy:
+  enabled: true
+  upstreamService: ext-monitoring-grafana
+  upstreamPort: 80
+  proxyPath: /api/v1/namespaces/cattle-monitoring-system/services/http:rancher-monitoring-grafana:80/proxy
 EOF
 
 helm upgrade --install rancher-monitoring \
-  "${CHARTS_DIR}/charts/rancher-monitoring/80.9.1-rancher.5" \
+  "${CHARTS_DIR}/charts/rancher-monitoring/80.9.1-rancher.6" \
   -n cattle-monitoring-system \
   --create-namespace \
   -f /tmp/rancher-monitoring-dashboard-only-values.yaml

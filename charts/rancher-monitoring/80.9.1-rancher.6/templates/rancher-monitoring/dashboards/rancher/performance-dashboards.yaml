@@ -1,0 +1,15 @@
+{{- if and (include "rancher-monitoring.dashboardArtifacts.enabled" .) .Values.dashboardArtifacts.groups.performance }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: {{ include "rancher-monitoring.dashboardNamespace" . }}
+  name: rancher-default-dashboards-performance-debugging
+  {{- with (include "rancher-monitoring.dashboardAnnotations" .) }}
+  annotations:
+{{ . | indent 4 }}
+  {{- end }}
+  labels:
+{{ include "rancher-monitoring.dashboardLabels" . | indent 4 }}
+data:
+{{ (.Files.Glob "files/rancher/performance/*").AsConfig | indent 2 }}
+{{- end }}
