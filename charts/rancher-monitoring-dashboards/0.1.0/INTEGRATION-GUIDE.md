@@ -1,10 +1,10 @@
 # Rancher Monitoring Dashboards Integration Guide
 
-This guide provides the instructions for installing the new `Monitoring Dashboards` chart and integrating it with your own Prometheus stack. The simplest way to do this is to install `kube-prometheus-stack`, but it is not the only way. For the purpose of this document, we will assume the user is using `kube-prometheus-stack`.
+This guide provides the instructions for installing the new `monitoring-dashboards` chart and integrating it with your own Prometheus stack. The simplest way to do this is to install `kube-prometheus-stack`, but it is not the only way. For the purpose of this document, we will assume the user is using `kube-prometheus-stack`.
 
 ## Installation
 
-For the new `Monitoring Dashboards` chart to work, it is necessary to provision the underlying monitoring infrastructure first. The monitoring infrastructure will be provided by the [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack) chart.
+For the new `monitoring-dashboards` chart to work, it is necessary to provision the underlying monitoring infrastructure first. The monitoring infrastructure will be provided by the [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack) chart.
 
 ### Step 1: Add kube-prometheus-stack helm repository
 
@@ -17,7 +17,7 @@ helm repo update
 
 ### Step 2: Create the kube-prometheus-stack values.yaml file
 
-Before installing `kube-prometheus-stack`, there are a few values required for the integration with `Monitoring Dashboards` to work, especially for embedding the dashboards. Create a `values.yaml` file with the following required values:
+Before installing `kube-prometheus-stack`, there are a few values required for the integration with `monitoring-dashboards` to work, especially for embedding the dashboards. Create a `values.yaml` file with the following required values:
 
 ```yaml
 grafana:
