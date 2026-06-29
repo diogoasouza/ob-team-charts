@@ -1,6 +1,6 @@
 # Rancher Monitoring Dashboards Integration Guide
 
-This guide provides the instructions for installing the new `Monitoring Dashboards` chart and integrating it with the `kube-prometheus-stack`.
+This guide provides the instructions for installing the new `Monitoring Dashboards` chart and integrating it with your own Prometheus stack. The simplest way to do this is to install `kube-prometheus-stack`, but it is not the only way. For the purpose of this document, we will assume the user is using `kube-prometheus-stack`.
 
 ## Installation
 
@@ -54,6 +54,10 @@ kubeProxy:
 
 This `values.yaml` configuration file will be applied to the `kube-prometheus-stack` chart installation process in the next step.
 
+> [!IMPORTANT]
+>
+> The new `monitoring-dashboards` doesn't have the following scraping metrics enabled by default: `kubeEtcd`, `kubeControllerManager`, `kubeScheduler`, and `kubeProxy`. To export those metrics, is necessary to use and configure [pushproxy](https://github.com/prometheus-community/PushProx).
+
 ### Step 3: Install kube-prometheus-stack chart
 
 The `kube-prometheus-stack` chart must be installed in the `cattle-monitoring-system` namespace, which can be accomplished in the Rancher UI or through helm CLI. Don't forget to apply the `values.yaml` created in the previous step:
@@ -71,16 +75,55 @@ helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
 
 After installing the underlying monitoring infrastructure, we can proceed to the installation of the `rancher-monitoring-dashboards` chart, which is available in the Apps tab and can be installed through the Rancher UI.
 
-## Service Name Overrides
+## Customization and Overrides
 
-The default `values.yaml` assumes standard service naming (e.g., `kube-prometheus-stack-<application>`). If you have modified these names, update the `grafanaProxy` configuration:
+### Monitoring Proxy Image Customization
+
+A single nginx pod (monitoringProxy) sits in front of Grafana, Prometheus, and Alertmanager so the Kubernetes API server's service proxy (used by Rancher UI) can reach them reliably. The nginx image can be changed with the following configuration:
+
+```yaml
+monitoringProxy:
+  image:
+    repository: <new/image>
+    tag: <version>
+```
+
+### Service Name Overrides
+
+The default `values.yaml` assumes standard service naming (e.g., `kube-prometheus-stack-<application>`), like so:
+
+```yaml
+grafanaProxy:
+  upstreamService: kube-prometheus-stack-grafana
+
+prometheusProxy:
+  upstreamService: kube-prometheus-stack-prometheus
+
+alertmanagerProxy:
+  upstreamService: kube-prometheus-stack-alertmanager
+```
+
+This creates mirror services that are deployed alongside the new chart and used by the reverse proxy that the UI needs to work. If you have changed the names during installation, then update the `upstreamService` configuration:
 
 ```yaml
 grafanaProxy:
   upstreamService: <upstream_service_name>
+
+prometheusProxy:
+  upstreamService: <upstream_service_name>
+
+alertmanagerProxy:
+  upstreamService: <upstream_service_name>
 ```
 
-## Project Monitoring Container Image Customization
+Make sure to disable `k3sServer` if you are not using `k3s`:
+
+```yaml
+k3sServer:
+  enabled: false
+```
+
+### Project Monitoring Container Image Customization
 
 To customize container images for Prometheus, Alertmanager, or Grafana when using prometheus-federator, apply the following overrides within your `helmProjectOperator` configuration:
 
