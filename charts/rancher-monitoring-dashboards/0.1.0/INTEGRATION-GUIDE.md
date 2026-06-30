@@ -145,3 +145,11 @@ helmProjectOperator:
         repository: <custom_repo>
         tag: <custom_tag>
 ```
+
+## Migrating from rancher-monitoring to rancher-monitoring-dashboards
+
+To migrate to `rancher-monitoring-dashboards` you must uninstall the `rancher-monitoring` chart, deploy your own `kube-prometheus-stack` (see [installation](#installation) guide above), and only then install `rancher-monitoring-dashboards`. To keep and/or migrate the logging data already produced, please refer to the Grafana and Prometheus documentation:
+
+- [Grafana | Back up Grafana](https://grafana.com/docs/grafana/latest/administration/back-up-grafana/)
+- [Prometheus | TSDB Admin APIs - Snapshot](https://prometheus.io/docs/prometheus/latest/querying/api/#snapshot)
+- [Prometheus | Storage](https://prometheus.io/docs/prometheus/latest/storage/)
