@@ -6,7 +6,7 @@ This guide provides the instructions for installing the new `monitoring-dashboar
 
 For the new `monitoring-dashboards` chart to work, it is necessary to provision the underlying monitoring infrastructure first. The monitoring infrastructure will be provided by the [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack) chart.
 
-### Step 1: Add kube-prometheus-stack helm repository
+### Step 1: Add `kube-prometheus-stack` helm repository
 
 Add the [prometheus-community](https://github.com/prometheus-community/helm-charts) helm repository. This may be performed via the Rancher UI or through [helm](https://helm.sh/docs/) CLI with the following command:
 
@@ -15,7 +15,7 @@ helm repo add prometheus-community https://prometheus-community.github.io/helm-c
 helm repo update
 ```
 
-### Step 2: Create the kube-prometheus-stack values.yaml file
+### Step 2: Create the `kube-prometheus-stack` values.yaml file
 
 Before installing `kube-prometheus-stack`, there are a few values required for the integration with `monitoring-dashboards` to work, especially for embedding the dashboards. Create a `values.yaml` file with the following required values:
 
@@ -58,7 +58,7 @@ This `values.yaml` configuration file will be applied to the `kube-prometheus-st
 >
 > The new `monitoring-dashboards` doesn't have the following scraping metrics enabled by default: `kubeEtcd`, `kubeControllerManager`, `kubeScheduler`, and `kubeProxy`. To export those metrics, is necessary to use and configure [pushproxy](https://github.com/prometheus-community/PushProx).
 
-### Step 3: Install kube-prometheus-stack chart
+### Step 3: Install `kube-prometheus-stack` chart
 
 The `kube-prometheus-stack` chart must be installed in the `cattle-monitoring-system` namespace, which can be accomplished in the Rancher UI or through helm CLI. Don't forget to apply the `values.yaml` created in the previous step:
 
@@ -71,7 +71,7 @@ helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
   -f values.yaml
 ```
 
-### Step 4: Install rancher-monitoring-dashboards
+### Step 4: Install `rancher-monitoring-dashboards`
 
 After installing the underlying monitoring infrastructure, we can proceed to the installation of the `rancher-monitoring-dashboards` chart, which is available in the Apps tab and can be installed through the Rancher UI.
 
@@ -146,7 +146,7 @@ helmProjectOperator:
         tag: <custom_tag>
 ```
 
-## Migrating from rancher-monitoring to rancher-monitoring-dashboards
+## Migrating from `rancher-monitoring` to `rancher-monitoring-dashboards`
 
 To migrate to `rancher-monitoring-dashboards` you must uninstall the `rancher-monitoring` chart, deploy your own `kube-prometheus-stack` (see [installation](#installation) guide above), and only then install `rancher-monitoring-dashboards`. To keep and/or migrate the logging data already produced, please refer to the Grafana and Prometheus documentation:
 
